@@ -3,8 +3,7 @@ Created on Dec 8, 2012
 
 @author: psachdev
 '''
-import MySQLdb as db
-from MySQLdb.constants import FIELD_TYPE
+from pymongo import MongoClient 
 
 class DBManagerClass:
     '''
@@ -13,6 +12,7 @@ class DBManagerClass:
 
 
     def __init__(self):
+        """
         self.username = 'root'
         self.password = 'root'
         self.host = '127.0.0.1'
@@ -22,6 +22,8 @@ class DBManagerClass:
         self.custom_conv = { FIELD_TYPE.BIT: int }
         self.connectToDb()
         self.createTables()
+        """
+        self.db = MongoClient("localhost", 27017)['staticAnalysis']
     
     def connectToDb (self):
         self.dbconn = db.Connect(self.host, self.username, self.password, self.dbname, self.dbport, conv=self.custom_conv)
@@ -36,50 +38,22 @@ class DBManagerClass:
         Test_linkurl (Id INT PRIMARY KEY AUTO_INCREMENT, packagename VARCHAR(255), appfilename VARCHAR(255), link_url VARCHAR(255), is_external INT, triggered_by_code VARCHAR(255), 3rd_party_package VARCHAR(255))")
         
     def insert3rdPartyPackageInfo (self, packagename, filename, externalpackagename, category):
-        cur = self.dbconn.cursor()
-        escape_packagename = str (self.dbconn.escape_string(packagename))
-        escape_filename = str (self.dbconn.escape_string(filename))
-        escape_externalpackagename = str (self.dbconn.escape_string(externalpackagename))
-        escape_category = str (self.dbconn.escape_string(category))
-        rows_affected = cur.execute("INSERT INTO Test_3rd_party_packages (packagename, filename, category, 3rd_party_package) VALUES('%s', '%s', '%s', '%s')" % (escape_packagename, escape_filename, escape_category, escape_externalpackagename))
-        self.dbconn.commit()
+        self.db.Test_3rd_party_packages.insert({'packagename': packagename, 'filename': filename, 'externalpackagename': externalpackagename, 'category': category})
         #print "Rows affected after inserting 3rdpartypackage - " + str (rows_affected)
         
          
     def insertPermissionInfo (self, packagename, filename, permission, is_external, dest, externalpackagename, src):
-        cur = self.dbconn.cursor()
-        escape_packagename = str (self.dbconn.escape_string(packagename))
-        escape_filename = str (self.dbconn.escape_string(filename))
-        escape_externalpackagename = str (self.dbconn.escape_string(externalpackagename))
-        escape_permission = str (self.dbconn.escape_string(permission))
-        escape_dest = str (self.dbconn.escape_string(dest))
-        escape_src = str (self.dbconn.escape_string(src))
-        
-        rows_affected = cur.execute("INSERT INTO Test_permissionlist (packagename, appfilename, permission, is_external, dest, 3rd_party_package, src) VALUES('%s', '%s', '%s', '%i', '%s', '%s', '%s')" % (escape_packagename, escape_filename, escape_permission, is_external, escape_dest, escape_externalpackagename, escape_src))
-        self.dbconn.commit()
+        self.db.Test_permissionlist.insert({'packagename': packagename, 'filename': filename, 'permission': permission, 'is_external': is_external, 'dest': dest, 'externalpackagename': externalpackagename, 'src': src})
         #print "Rows affected after inserting permission - " + str (rows_affected)
         
     def insertLinkInfo (self, packagename, filename, link_url, is_external, triggered_by_code, externalpackagename):
-        cur = self.dbconn.cursor()
-        escape_packagename = str (self.dbconn.escape_string(packagename))
-        escape_filename = str (self.dbconn.escape_string(filename))
-        escape_triggered_by_code = str (self.dbconn.escape_string( triggered_by_code))
-        escape_externalpackagename = str (self.dbconn.escape_string(externalpackagename))
-        escape_url = str (self.dbconn.escape_string(link_url))
-        rows_affected = cur.execute("INSERT INTO Test_linkurl (packagename, appfilename, link_url, is_external, triggered_by_code, 3rd_party_package) VALUES('%s', '%s', '%s', '%d', '%s', '%s')" % (escape_packagename, escape_filename, escape_url, is_external, escape_triggered_by_code, escape_externalpackagename))
-        self.dbconn.commit()
+        self.db.Test_linkurl.insert({'packagename': packagename, 'filename': filename, 'link_url': link_url, 'is_external': is_external, 'triggered_by_code': triggered_by_code, 'externalpackagename': externalpackagename})
         #print "Rows affected after inserting permission - " + str (rows_affected)
         
-    def deleteEntry (self, apkname):
-       cur = self.dbconn.cursor()
-       escape_apkname = str (self.dbconn.escape_string(apkname))
-       rows_affected = cur.execute("DELETE FROM Test_linkurl WHERE packagename='%s'" % (escape_apkname))
-       print "Rows affected after deletion - " + str (rows_affected)
-       rows_affected = cur.execute("DELETE FROM Test_permissionlist WHERE packagename='%s'" % (escape_apkname))
-       print "Rows affected after deletion - " + str (rows_affected)
-       rows_affected = cur.execute("DELETE FROM Test_3rd_party_packages WHERE packagename='%s'" % (escape_apkname))
-       print "Rows affected after deletion - " + str (rows_affected)
-       self.dbconn.commit()
+    def deleteEntry (self, packagename):
+       self.db.Test_linkurl.remove({'packagename': packagename})
+       self.db.Test_permissionlist.remove({'packagename': packagename})
+       self.db.Test_3rd_party_packages.remove({'packagename': packagename})
        
         
         

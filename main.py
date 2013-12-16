@@ -29,6 +29,7 @@ def naiveSearch(aDict, searchString):
 
 if __name__ == '__main__':
     DIR = sys.argv[1]
+    OUT = sys.argv[2] + '/out/'
     '''
     Database Handle used to insert fields
     '''
@@ -44,7 +45,7 @@ if __name__ == '__main__':
     logObject = logging.getLogger("logfile")
     logObject.setLevel(logging.DEBUG)
     # create file handler which logs even debug messages
-    logFileHandler = logging.FileHandler('/home/ubuntu/out/exceptions.log')
+    logFileHandler = logging.FileHandler(OUT + 'exceptions.log')
     logFileHandler.setLevel(logging.DEBUG)
     logFormat = logging.Formatter("%(levelname)s %(asctime)s %(funcName)s %(lineno)d %(message)s")
     logFileHandler.setFormatter(logFormat)
@@ -54,14 +55,13 @@ if __name__ == '__main__':
 
     #DIR = '<Directory-Name-where all apks reside>'
     #OUT = '<Directory-Name where output files are expected>'
-    OUT = '/home/ubuntu/out/'
     
     filesread = {}
-    filelistname = '/home/ubuntu/out/filelist.txt'
+    filelistname = OUT + 'filelist.txt'
     filelisthandle = open (filelistname, 'r+')
     lines = filelisthandle.readlines()
     for filename in lines:
-	filesread[filename] = 1
+      filesread[filename] = 1
     filelisthandle.close()
     filelisthandle = open (filelistname, 'a')
 
@@ -74,14 +74,13 @@ if __name__ == '__main__':
                 #print category
                 filename = path + '/' + fileName
                 if fileName != 'links.txt' and fileName != 'permissions.txt' and fileName != 'packages.txt' and fileName != '.dropbox' and fileName != 'list.csv' and fileName != 'externalpackcntt.csv' and fileName != 'externalpackpopularitycnt.csv' and fileName != 'packages.txt':
-
-		    x = naiveSearch (filesread, fileName)
-		    if x == 0:
-		    	filelisthandle.write( str(fileName) )
-		    	filelisthandle.write("\n")
-			filelisthandle.flush()
-		    else:
-			continue
+                    x = naiveSearch (filesread, fileName)
+                    if x == 0:
+                        filelisthandle.write( str(fileName) )
+                        filelisthandle.write("\n")
+                        filelisthandle.flush()
+                    else:
+                        continue
                     outFileName = '/package.txt'
                     outFileName = OUT + outFileName
                     instance = namespaceanalyzer.NameSpaceMgr()
