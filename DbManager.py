@@ -23,7 +23,7 @@ class DBManagerClass:
         self.connectToDb()
         self.createTables()
         """
-        self.db = MongoClient("localhost", 27017)['staticAnalysis']
+        self.db = MongoClient("54.204.168.124", 27017)['staticAnalysis']
     
     def connectToDb (self):
         self.dbconn = db.Connect(self.host, self.username, self.password, self.dbname, self.dbport, conv=self.custom_conv)

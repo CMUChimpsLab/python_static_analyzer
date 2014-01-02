@@ -29,7 +29,7 @@ def naiveSearch(aDict, searchString):
 
 if __name__ == '__main__':
     DIR = sys.argv[1]
-    OUT = sys.argv[2] + '/out/'
+    OUT = sys.argv[2] + '/'
     '''
     Database Handle used to insert fields
     '''
