@@ -8,6 +8,7 @@ from androguard.core.bytecodes import dvm
 from androguard.core.analysis.analysis import *
 import DirStructHandler
 import PackageRules
+import re
 
 class NameSpaceMgr:
     '''
@@ -47,6 +48,20 @@ class NameSpaceMgr:
             tokens.append(name)
                         
         return tokens
+
+    '''
+    Song
+    Special Handling for Google SDK
+    '''
+    def specialHandlingForGoogleSDK(self, package_name):
+        if "googleAnalytics" not in self.alreadyPrinted and (package_name.startswith('Lcom/google/analytics/') or package_name.startswith('Lcom/google/android/apps/analytics/')):
+            #should do something or not for tracking
+            pass
+        if "admob" not in self.alreadyPrinted and package_name.startswith('Lcom/google/ads'):
+            self.dbMgr.insert3rdPartyPackageInfo (self.main_package_name, self.fileName, "admob", self.category)
+            self.alreadyPrinted.append ("admob")
+            self.packages.append ("admob")
+
     
     def execute (self, fileName, outFileName, dbMgr, noprefixfilename, category, a, d, dx):
         ###a = apk.APK(fileName)
@@ -99,11 +114,14 @@ class NameSpaceMgr:
         ex2 = re.compile ("Landroid/*")
         ex3 = re.compile (self.GetDecompiledPackageName (self.main_package_name))
         ex4 = re.compile("/google/")
+
         
         package_names = []
+
                
         
         for _, package_name in packages.get_packages():
+            self.specialHandlingForGoogleSDK(package_name)
             if ex3.search (package_name) == None and ex1.search (package_name) == None and ex2.search (package_name) == None and ex4.search (package_name) == None:
                 package_names.append (self.GetDirectoryName (package_name))
                 #print package_name
@@ -133,6 +151,16 @@ class NameSpaceMgr:
         #print decompiledName
         return decompiledName
     
+    '''
+    Song
+    New method for Removing noisy characters from names
+    '''
+    def _GetDirectoryName(self, package_name):
+        package_name = package_name.replace('/', '.')
+        #remove not java characters
+        package_name = package_name.translate(re.sub('[^_a-zA-Z$0-9\s\.]', '', package_name))
+        return package_name
+        
     '''
     Removing noisy characters from the names
     '''
