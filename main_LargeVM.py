@@ -28,9 +28,7 @@ def naiveSearch(aDict, searchString):
     return 0
 
 if __name__ == '__main__':
-    DIR = sys.argv[1]
-    OUT = sys.argv[2] + '/'
-    analyzeListFile = open(sys.argv[3])
+    OUT = sys.argv[1] + '/'
     '''
     Database Handle used to insert fields
     '''
@@ -66,11 +64,11 @@ if __name__ == '__main__':
     filelisthandle.close()
     filelisthandle = open (filelistname, 'a')
 
-    for line in analyzeListFile:
-        path = DIR
-        fileName = line.strip('\n ') 
+    for entry in dbMgr.androidAppDB.apkInfo.find({'isApkUpdated':True},{"fileDir":1, 'packageName':1}, timeout=False):
+        fileName = entry['packageName'] + '.apk'
+        path = entry['fileDir']
         try:
-            print "FileName Analyzed :" + path + '/' + fileName
+            print "FileName Analyzed :"  + fileName
             tokens = namespaceanalyzer.NameSpaceMgr.GetTokensStatic (path, '/')
             category =  tokens [len (tokens) - 1]
             #print category
@@ -100,6 +98,7 @@ if __name__ == '__main__':
                 outfile_links = '/links.txt'
                 outfile_links = OUT + outfile_links
                 SearchIntents.Intents(filename, outfile_links, packages, dbMgr, fileName, a, d, dx);
+                dbMgr.androidAppDB.apkInfo.update({'packageName':entry['packageName']}, {'$set': {'isApkUpdated': False}})
         except:
             logObject.error("\n")
             logObject.error("=======================================================================")
