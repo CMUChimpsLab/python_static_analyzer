@@ -15,7 +15,7 @@ from androguard.core.bytecodes import apk
 from androguard.core.bytecodes import dvm
 from androguard.core.analysis.analysis import *
 
-from multiprocessing import Pool
+from multiprocessing import Pool, get_logger
 
 def handler (signum, sigframe):
     raise Exception ("Killed");
@@ -50,9 +50,12 @@ def analyze((apkEntry, OUT)):
         SearchIntents.Intents(filename, outfile_links, packages, dbMgr, fileName, a, d, dx);
         dbMgr.androidAppDB.apkInfo.update({'packageName':apkEntry['packageName']}, {'$set': {'isApkUpdated': False}})
         return apkEntry['packageName']
-    except Exception as e:
-        e.args = [apkEntry['packageName']]
-        raise e
+    except:
+        logger.error("\n")
+        logger.error("=======================================================================")
+        logger.error("\n")
+        logger.exception("Main : Exception occured for " + apkEntry['packageName'])
+        return ""
 
 if __name__ == '__main__':
     OUT = sys.argv[1]
@@ -68,35 +71,24 @@ if __name__ == '__main__':
     dbMgr.insertPermissionInfo('testpackage', 'testfilename', 'testpermission', True, 'testdest', 'testexternalpackagename', 'testsrc')
     dbMgr.insertLinkInfo('testpackage', 'testfilename', 'testlink', True, 'testdest', 'testexternalpackagename')
     '''
-    # Make a global logging object.
-    logObject = logging.getLogger("logfile")
-    logObject.setLevel(logging.DEBUG)
-    # create file handler which logs even debug messages
+    logger = get_logger()
     logFileHandler = logging.FileHandler(OUT + '/exceptions.log')
-    logFileHandler.setLevel(logging.DEBUG)
     logFormat = logging.Formatter("%(levelname)s %(asctime)s %(funcName)s %(lineno)d %(message)s")
+    logFileHandler.setLevel(logging.DEBUG)
     logFileHandler.setFormatter(logFormat)
-    logObject.addHandler(logFileHandler)
+    logger.addHandler(logFileHandler)
     
 
-    try:
-        apkList = list(dbMgr.androidAppDB.apkInfo.find({'isApkUpdated':True},{"fileDir":1, 'packageName':1}))
-        apkList = [(entry, OUT, logObject) for entry in apkList]
-        #apkList = [({'packageName': line.rstrip('\n').replace(".apk",''), 'fileDir': '../downloads/'}, OUT) for line in open("apkList").readlines()]
-        numberOfProcess = 4
-        pool = Pool(numberOfProcess)
-        for packageName in pool.imap(analyze, apkList):
+    apkList = list(dbMgr.androidAppDB.apkInfo.find({'isApkUpdated':True},{"fileDir":1, 'packageName':1}))
+    apkList = [(entry, OUT, logObject) for entry in apkList]
+    #apkList = [({'packageName': line.rstrip('\n').replace(".apk",''), 'fileDir': '../downloads/'}, OUT) for line in open("apkList").readlines()]
+    numberOfProcess = 4
+    pool = Pool(numberOfProcess)
+    for packageName in pool.imap(analyze, apkList):
+        if packageName != "":
             analyzedApkFile.write(packageName + '\n')
+            analyzedApkFile.flush()
             
-    except Exception as e:
-        packageName = ''
-        if len(e.args) > 1:
-            packageName = e.args[0]
-            
-        logObject.error("\n")
-        logObject.error("=======================================================================")
-        logObject.error("\n")
-        logObject.exception("Main : Exception occured for " + packageName)
 
 
             
