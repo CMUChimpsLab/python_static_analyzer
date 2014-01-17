@@ -35,7 +35,7 @@ class Intents:
         ###d = dvm.DalvikVMFormat (a.get_dex())
         ###dx = uVMAnalysis (d)
         
-        self.outHandle = open (outfile, 'a+')
+        #self.outHandle = open (outfile, 'a+')
         
         ex1 = re.compile ("http://")
         mpn = a.get_package()
@@ -62,7 +62,6 @@ class Intents:
             self.fileName = noprefixfilename
         
         ###self.outHandle.write(infile)
-        print self.main_package_name
         ex3 = re.compile (self.main_package_name)
         
         self.dbMgr = dbMgr
@@ -139,5 +138,5 @@ class Intents:
                         
                     #access, idx = path[0]    
                     ###self.outHandle.write ('\n\n')
-        self.outHandle.close()
+        #self.outHandle.close()
         

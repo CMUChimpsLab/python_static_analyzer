@@ -26,7 +26,7 @@ class DBManagerClass:
         self.client = MongoClient("localhost", 27017)
         self.staticAnalysisDB = self.client['staticAnalysis']
         self.androidAppDB = self.client['androidApp']
-        #self.db = MongoClient("localhost", 27017)['test']
+        #self.staticAnalysisDB = self.client['test']
     
     def connectToDb (self):
         self.dbconn = self.staticAnalysisDB.Connect(self.host, self.username, self.password, self.dbname, self.dbport, conv=self.custom_conv)

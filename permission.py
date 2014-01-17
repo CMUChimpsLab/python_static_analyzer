@@ -13,8 +13,8 @@ class StaticAnalyzer:
     def findandprint (self, packages, dst_class_name):
         for package in packages:
             if package in dst_class_name:
-                self.outHandle.write ("\n    PackageName - ")
-                self.outHandle.write (dst_class_name)
+                #self.outHandle.write ("\n    PackageName - ")
+                #self.outHandle.write (dst_class_name)
                 if len(package) > 250 :
                     pck = (package[:200] + '..')
                 else:
@@ -31,7 +31,7 @@ class StaticAnalyzer:
         analysis = dx.get_vm()
         cm = analysis.get_class_manager()
         
-        self.outHandle = open (outFileName, 'a+')
+        #self.outHandle = open (outFileName, 'a+')
         '''
         Handle to Database
         '''
@@ -54,12 +54,12 @@ class StaticAnalyzer:
         else:
             self.fileName = noprefixfilename
             
-        self.outHandle.write ("\n")
-        self.outHandle.write ("---Package Name---\n")
+        #self.outHandle.write ("\n")
+        #self.outHandle.write ("---Package Name---\n")
         #print self.main_package_name
        
         
-        self.outHandle.write (fileName)
+        #self.outHandle.write (fileName)
         ex3 = re.compile (self.main_package_name)
         
         '''
@@ -68,7 +68,7 @@ class StaticAnalyzer:
         '''
         p = dx.get_permissions( [] )
         
-        self.outHandle.write ('\n')
+        #self.outHandle.write ('\n')
         '''
         1. Loop through the permissions
         2. Get the source class & destination class of the permission
@@ -81,10 +81,10 @@ class StaticAnalyzer:
         '''
         for i in p :
             #print i, ":"
-            self.outHandle.write (i)
+            #self.outHandle.write (i)
             for path in p [i] :
                 
-                self.outHandle.write ('\n')
+                #self.outHandle.write ('\n')
                 dst, dst_method_name, dst_descriptor = path.get_dst( cm )
                 dst = dst.replace('/', '.')
                 if len(dst) > 250 :
@@ -101,16 +101,16 @@ class StaticAnalyzer:
                 '''
                 if ex3.search(dst_class_name) == None:
                     #print "EXTERNAL - ", dst_class_name
-                    self.outHandle.write (" EXTERNAL - ")
+                    #self.outHandle.write (" EXTERNAL - ")
                     if isinstance(path, PathVar) :
                         package = self.findandprint (packages, dst_class_name)
-                        self.outHandle.write ("\n    Dest - ")
-                        self.outHandle.write (dst_class_name)
+                        #self.outHandle.write ("\n    Dest - ")
+                        #self.outHandle.write (dst_class_name)
                         dbMgr.insertPermissionInfo(self.main_package_name, self.fileName, i, True, dst_class_name, package, "NA")
                     else:
                         self.findandprint (packages, dst_class_name)
-                        self.outHandle.write ("\n    Dest - ")
-                        self.outHandle.write (dst_class_name)
+                        #self.outHandle.write ("\n    Dest - ")
+                        #self.outHandle.write (dst_class_name)
                         src, src_method_name, src_descriptor = path.get_src( cm )
                         package = self.findandprint(packages, src)
                         if len(src) > 250 :
@@ -120,24 +120,24 @@ class StaticAnalyzer:
                         else:
                             src_class_name = src
                 
-                        self.outHandle.write ("\n    Src - ")
-                        self.outHandle.write (src_class_name)
+                        #self.outHandle.write ("\n    Src - ")
+                        #self.outHandle.write (src_class_name)
                         #print 'PACKAGE : \n'
                         #print package
                         dbMgr.insertPermissionInfo(self.main_package_name, self.fileName, i, True, dst_class_name, package, src_class_name)
-                    self.outHandle.write ('\n')
+                    #self.outHandle.write ('\n')
                 else :
                     #print "APP ", dst_class_name
-                    self.outHandle.write (" APP - ")
+                    #self.outHandle.write (" APP - ")
                     if isinstance(path, PathVar) :
                         package = self.findandprint (packages, dst_class_name)
-                        self.outHandle.write ("\n    Dest - ")
-                        self.outHandle.write (dst_class_name)
+                        #self.outHandle.write ("\n    Dest - ")
+                        #self.outHandle.write (dst_class_name)
                         dbMgr.insertPermissionInfo(self.main_package_name, self.fileName, i, False, dst_class_name, package, "NA")
                     else :
                         self.findandprint (packages, dst_class_name)
-                        self.outHandle.write ("\n    Dest - ")
-                        self.outHandle.write (dst_class_name)
+                        #self.outHandle.write ("\n    Dest - ")
+                        #self.outHandle.write (dst_class_name)
                         src, src_method_name, src_descriptor = path.get_src( cm )
                         package = self.findandprint (packages, src)
                         if len(src) > 250 :
@@ -146,11 +146,11 @@ class StaticAnalyzer:
                             src_class_name = "NA"
                         else:
                             src_class_name = src
-                        self.outHandle.write ("\n    Src - ")
-                        self.outHandle.write (src_class_name)
+                        #self.outHandle.write ("\n    Src - ")
+                        #self.outHandle.write (src_class_name)
                         dbMgr.insertPermissionInfo(self.main_package_name, self.fileName, i, True, dst_class_name, package, src_class_name)
-                    self.outHandle.write ('\n')
-        self.outHandle.close()
+                    #self.outHandle.write ('\n')
+        #self.outHandle.close()
         
  
        

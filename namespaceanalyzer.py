@@ -67,7 +67,7 @@ class NameSpaceMgr:
         ###a = apk.APK(fileName)
         ###d = dvm.DalvikVMFormat (a.get_dex())
         ###dx = uVMAnalysis (d)
-        self.outHandle = open (outFileName, 'a+')
+        #self.outHandle = open (outFileName, 'a+')
         
         '''
         Handle to DataBase 
@@ -130,7 +130,7 @@ class NameSpaceMgr:
         self.PopulateDirEntries(package_names)
         self.GetPackages ()
         
-        self.outHandle.close()
+        #self.outHandle.close()
         return self.alreadyPrinted
         
  
