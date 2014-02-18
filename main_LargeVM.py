@@ -33,6 +33,8 @@ def analyze((apkEntry, OUT)):
         filename = path + '/' + fileName
         outFileName = '/package.txt'
         outFileName = OUT + outFileName
+        #remove old db entry in static analysis db
+        dbMgr.deleteEntry(apkEntry['packageName'])
         instance = namespaceanalyzer.NameSpaceMgr()
     
         a = apk.APK(filename)
@@ -59,6 +61,7 @@ def analyze((apkEntry, OUT)):
 
 if __name__ == '__main__':
     OUT = sys.argv[1]
+    #in case the crawler breaks, append to the list.
     analyzedApkFile = open(OUT + '/' + 'filelist.txt', 'a+')
     '''
     Database Handle used to insert fields
@@ -80,7 +83,7 @@ if __name__ == '__main__':
     
 
     apkList = list(dbMgr.androidAppDB.apkInfo.find({'isApkUpdated':True},{"fileDir":1, 'packageName':1}))
-    apkList = [(entry, OUT, logObject) for entry in apkList]
+    apkList = [(entry, OUT) for entry in apkList]
     #apkList = [({'packageName': line.rstrip('\n').replace(".apk",''), 'fileDir': '../downloads/'}, OUT) for line in open("apkList").readlines()]
     numberOfProcess = 4
     pool = Pool(numberOfProcess)
