@@ -10,9 +10,26 @@ from androguard.core.analysis.analysis import *
 
 class StaticAnalyzer:
  
-    def findandprint (self, packages, dst_class_name):
+    '''
+    Song
+    Special Handling for Google SDK
+    '''
+    def specialHandlingForGoogleSDK(self, class_name):
+        #src has "/" as seperator, dst has "."
+        class_name = class_name.replace('/', '.')
+        if (class_name.startswith('Lcom.google.analytics.') or class_name.startswith('Lcom.google.android.apps.analytics.')):
+            #should do something or not for tracking
+            pass
+        if class_name.startswith('Lcom.google.ads'):
+            return 'admob'
+        return None
+
+    def findandprint (self, packages, class_name):
+        googleLib = self.specialHandlingForGoogleSDK(class_name) 
+        if googleLib is not None:
+            return googleLib
         for package in packages:
-            if package in dst_class_name:
+            if package in class_name:
                 #self.outHandle.write ("\n    PackageName - ")
                 #self.outHandle.write (dst_class_name)
                 if len(package) > 250 :
@@ -99,58 +116,20 @@ class StaticAnalyzer:
                 because 
                 its under whatsapp directory which a token present the name of apk file
                 '''
-                if ex3.search(dst_class_name) == None:
-                    #print "EXTERNAL - ", dst_class_name
-                    #self.outHandle.write (" EXTERNAL - ")
-                    if isinstance(path, PathVar) :
-                        package = self.findandprint (packages, dst_class_name)
-                        #self.outHandle.write ("\n    Dest - ")
-                        #self.outHandle.write (dst_class_name)
-                        dbMgr.insertPermissionInfo(self.main_package_name, self.fileName, i, True, dst_class_name, package, "NA")
+                """
+                 path can be PathVar or PathP, PathVar only have dst, PathP have both dst and src. In my opinion, they are different ASM code, one with two argu, one with one argu
+                """
+                if isinstance(path, PathVar) :
+                    is_external = (ex3.search(dst_class_name) == None)
+                    package = self.findandprint (packages, dst_class_name)
+                    dbMgr.insertPermissionInfo(self.main_package_name, self.fileName, i, is_external, dst_class_name, package, "NA")
+                else:
+                    src, src_method_name, src_descriptor = path.get_src( cm )
+                    package = self.findandprint(packages, src)
+                    if len(src) > 250 :
+                        src_class_name = (src[:200] + '..')
                     else:
-                        self.findandprint (packages, dst_class_name)
-                        #self.outHandle.write ("\n    Dest - ")
-                        #self.outHandle.write (dst_class_name)
-                        src, src_method_name, src_descriptor = path.get_src( cm )
-                        package = self.findandprint(packages, src)
-                        if len(src) > 250 :
-                            src_class_name = (src[:200] + '..')
-                        elif len(src) <= 3 or src.find('$')!=-1 :
-                            src_class_name = "NA"
-                        else:
-                            src_class_name = src
-                
-                        #self.outHandle.write ("\n    Src - ")
-                        #self.outHandle.write (src_class_name)
-                        #print 'PACKAGE : \n'
-                        #print package
-                        dbMgr.insertPermissionInfo(self.main_package_name, self.fileName, i, True, dst_class_name, package, src_class_name)
-                    #self.outHandle.write ('\n')
-                else :
-                    #print "APP ", dst_class_name
-                    #self.outHandle.write (" APP - ")
-                    if isinstance(path, PathVar) :
-                        package = self.findandprint (packages, dst_class_name)
-                        #self.outHandle.write ("\n    Dest - ")
-                        #self.outHandle.write (dst_class_name)
-                        dbMgr.insertPermissionInfo(self.main_package_name, self.fileName, i, False, dst_class_name, package, "NA")
-                    else :
-                        self.findandprint (packages, dst_class_name)
-                        #self.outHandle.write ("\n    Dest - ")
-                        #self.outHandle.write (dst_class_name)
-                        src, src_method_name, src_descriptor = path.get_src( cm )
-                        package = self.findandprint (packages, src)
-                        if len(src) > 250 :
-                            src_class_name = (src[:200] + '..')
-                        elif len(src) <= 5 or src.find('$')!=-1:
-                            src_class_name = "NA"
-                        else:
-                            src_class_name = src
-                        #self.outHandle.write ("\n    Src - ")
-                        #self.outHandle.write (src_class_name)
-                        dbMgr.insertPermissionInfo(self.main_package_name, self.fileName, i, True, dst_class_name, package, src_class_name)
-                    #self.outHandle.write ('\n')
-        #self.outHandle.close()
-        
- 
+                        src_class_name = src
+                    is_external = (ex3.search(src_class_name) == None)
+                    dbMgr.insertPermissionInfo(self.main_package_name, self.fileName, i, is_external, dst_class_name, package, src_class_name)
        
