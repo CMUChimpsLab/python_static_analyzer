@@ -37,7 +37,7 @@ class Rules:
             return
         elif self.rootName == "com" or self.rootName == "Lcom":
             tokens = self.GetTokens(self.main_package_name)
-            if tokens [1] == "google":
+            if len(tokens) > 1 and tokens [1] == "google":
                 self.packageLevel = -1 #indicating its google_apk
             else:
                 self.packageLevel = 2 #com.bayview.*or com.googlex.*
