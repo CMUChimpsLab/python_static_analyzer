@@ -118,7 +118,7 @@ class Intents:
                             strlink = link
                             
                                                
-                        self.dbMgr.insertLinkInfo(self.main_package_name, self.fileName, strlink, False, dst, xpck)
+                        self.dbMgr.insertLinkInfo(self.main_package_name, self.fileName, strlink.decode('UTF-8', 'ignore'), False, dst, xpck)
                         
                     else:
                         _,link = full
@@ -134,7 +134,7 @@ class Intents:
                             strlink = link      
                             
                                                
-                        self.dbMgr.insertLinkInfo(self.main_package_name, self.fileName, strlink, True, dst, xpck)
+                        self.dbMgr.insertLinkInfo(self.main_package_name, self.fileName, strlink.decode('UTF-8', 'ignore'), True, dst, xpck)
                         
                     #access, idx = path[0]    
                     ###self.outHandle.write ('\n\n')
