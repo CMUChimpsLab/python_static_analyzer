@@ -33,13 +33,16 @@ def analyze((apkEntry, OUT)):
         filename = path + '/' + fileName
         outFileName = '/package.txt'
         outFileName = OUT + outFileName
-        #remove old db entry in static analysis db
-        dbMgr.deleteEntry(apkEntry['packageName'])
         instance = namespaceanalyzer.NameSpaceMgr()
     
-        a = apk.APK(filename)
+        try:
+          a = apk.APK(filename, zipmodule=1)
+        except:
+          a = apk.APK(filename, zipmodule=2)
         d = dvm.DalvikVMFormat (a.get_dex())
         dx = uVMAnalysis (d)
+        #remove old db entry in static analysis db
+        dbMgr.deleteEntry(apkEntry['packageName'])
     
         packages = instance.execute (filename, outFileName, dbMgr, fileName, category, a, d, dx)
                 

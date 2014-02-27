@@ -32,7 +32,8 @@ from xml.dom import minidom
 # 0: chilkat
 # 1: default python zipfile module
 # 2: patch zipfile module
-ZIPMODULE = 1
+# some app using this way to anti decompile
+ZIPMODULE = 2
 
 import sys
 if sys.hexversion < 0x2070000 :
@@ -46,9 +47,9 @@ if sys.hexversion < 0x2070000 :
             CHILKAT_KEY = "testme"
 
     except ImportError :
-        ZIPMODULE = 1
+        ZIPMODULE = 2
 else :
-    ZIPMODULE = 1 
+    ZIPMODULE = 2 
 
 ################################################### CHILKAT ZIP FORMAT #####################################################
 class ChilkatZip :
