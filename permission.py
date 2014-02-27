@@ -83,7 +83,10 @@ class StaticAnalyzer:
         Getting the permissions using dalvik analysis
         It reads the permissions from the android-manifest file
         '''
-        p = dx.get_permissions( [] )
+        #manifestPermissions = dbMgr.getManiFestPermissions(self.main_package_name)
+        manifestPermissions = a.get_permissions()
+        manifestPermissions = [permission.lstrip('android.permission.') for permission in manifestPermissions if permission.startswith('android.permission.')]
+        p = dx.get_permissions( manifestPermissions )
         
         #self.outHandle.write ('\n')
         '''

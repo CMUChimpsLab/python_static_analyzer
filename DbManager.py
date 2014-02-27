@@ -40,6 +40,8 @@ class DBManagerClass:
         cur.execute("CREATE TABLE IF NOT EXISTS \
         Test_linkurl (Id INT PRIMARY KEY AUTO_INCREMENT, packagename VARCHAR(255), appfilename VARCHAR(255), link_url VARCHAR(255), is_external INT, triggered_by_code VARCHAR(255), 3rd_party_package VARCHAR(255))")
         
+    def getManiFestPermissions(self, packagename):
+        return self.androidAppDB.apkInfo.find_one({'packageName': packagename}, {'permission':1})['permission']
     def insert3rdPartyPackageInfo (self, packagename, filename, externalpackagename, category):
         self.staticAnalysisDB.Test_3rd_party_packages.insert({'packagename': packagename, 'filename': filename, 'externalpackagename': externalpackagename, 'category': category})
         #print "Rows affected after inserting 3rdpartypackage - " + str (rows_affected)
