@@ -1,7 +1,7 @@
 #!/bin/sh
 
-Now=$(date +"%Y%m%d%H%M")
-outputPath="/home/lsuper/apk_data/log/staticAnalysis/parrallelLog/$Now"
+#Now=$(date +"%Y%m%d%H%M")
+Now=$1
+outputPath="/home/lsuper/apk_data/log/staticAnalysis/$Now"
 mkdir -p $outputPath
-touch $outputPath/filelist.txt
-python /home/lsuper/projects/python_static_analyzer/main_LargeVM.py $outputPath 
+python /home/lsuper/projects/privacyGradePipeline/python_static_analyzer/main_LargeVM.py $outputPath 
