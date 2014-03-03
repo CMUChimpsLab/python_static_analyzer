@@ -64,6 +64,13 @@ def analyze((apkEntry, OUT)):
 
 if __name__ == '__main__':
     OUT = sys.argv[1]
+    isParallel = False
+    #for parallel running on multiple instances
+    apkListFile = None
+    if len(sys.argv) > 2:
+      apkListFile = sys.argv[2] 
+      isParallel = True
+          
     #in case the crawler breaks, append to the list.
     analyzedApkFile = open(OUT + '/' + 'filelist.txt', 'a+')
     '''
@@ -84,8 +91,15 @@ if __name__ == '__main__':
     logFileHandler.setFormatter(logFormat)
     logger.addHandler(logFileHandler)
     
-
-    apkList = list(dbMgr.androidAppDB.apkInfo.find({'isApkUpdated':True},{"fileDir":1, 'packageName':1}))
+    apkList = []
+    if isParallel:
+        apkList_f = open(apkListFile)
+        for line in apkList_f:
+            pair = line.rstrip('\n').split(' ')
+            apkList.append({'packageName': pair[0], "fileDir": pair[1].replace("/home/lsuper/apk_data", "/home/ubuntu")}) 
+        apkList_f.close()
+    else:
+        apkList = list(dbMgr.androidAppDB.apkInfo.find({'isApkUpdated':True},{"fileDir":1, 'packageName':1}))
     apkList = [(entry, OUT) for entry in apkList]
     #apkList = [({'packageName': line.rstrip('\n').replace(".apk",''), 'fileDir': '../downloads/'}, OUT) for line in open("apkList").readlines()]
     numberOfProcess = 4
@@ -94,12 +108,4 @@ if __name__ == '__main__':
         if packageName != "":
             analyzedApkFile.write(packageName + '\n')
             analyzedApkFile.flush()
-            
-
-
-            
-                
-               
-            
-    
     

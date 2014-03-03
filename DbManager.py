@@ -23,7 +23,7 @@ class DBManagerClass:
         self.connectToDb()
         self.createTables()
         """
-        self.client = MongoClient("localhost", 27017)
+        self.client = MongoClient("54.204.168.124", 27017)
         self.staticAnalysisDB = self.client['staticAnalysis']
         self.androidAppDB = self.client['androidApp']
         #self.staticAnalysisDB = self.client['test']
