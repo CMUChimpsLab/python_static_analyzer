@@ -4,6 +4,7 @@ Created on Dec 8, 2012
 @author: psachdev
 '''
 from pymongo import MongoClient 
+from dbConfig import HOSTNAME
 
 class DBManagerClass:
     '''
@@ -23,7 +24,7 @@ class DBManagerClass:
         self.connectToDb()
         self.createTables()
         """
-        self.client = MongoClient("54.204.168.124", 27017)
+        self.client = MongoClient(HOSTNAME, 27017)
         self.staticAnalysisDB = self.client['staticAnalysis']
         self.androidAppDB = self.client['androidApp']
         #self.staticAnalysisDB = self.client['test']
