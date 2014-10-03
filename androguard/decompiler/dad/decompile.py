@@ -3,31 +3,33 @@
 # Copyright (c) 2012 Geoffroy Gueguen <geoffroy.gueguen@gmail.com>
 # All Rights Reserved.
 #
-# Androguard is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Androguard is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# You should have received a copy of the GNU Lesser General Public License
-# along with Androguard.  If not, see <http://www.gnu.org/licenses/>.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS-IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import sys
 sys.path.append('./')
 
 import logging
+from collections import defaultdict
 import androguard.core.androconf as androconf
 import androguard.decompiler.dad.util as util
 from androguard.core.analysis import analysis
 from androguard.core.bytecodes import apk, dvm
 from androguard.decompiler.dad.control_flow import identify_structures
 from androguard.decompiler.dad.dataflow import (build_def_use,
+                                                place_declarations,
                                                 dead_code_elimination,
-                                                register_propagation)
+                                                register_propagation,
+                                                split_variables)
 from androguard.decompiler.dad.graph import construct
 from androguard.decompiler.dad.instruction import Param, ThisParam
 from androguard.decompiler.dad.writer import Writer
@@ -47,19 +49,19 @@ def auto_vm(filename):
 class DvMethod():
     def __init__(self, methanalysis):
         method = methanalysis.get_method()
+        self.method = method # EncodedMethod linked to have more info in DvMethod
         self.start_block = next(methanalysis.get_basic_blocks().get(), None)
         self.cls_name = method.get_class_name()
         self.name = method.get_name()
         self.lparams = []
-        self.var_to_name = {}
+        self.var_to_name = defaultdict()
         self.writer = None
         self.graph = None
 
-        access = method.get_access_flags()
-        self.access = [flag for flag in util.ACCESS_FLAGS_METHODS
-                                     if flag & access]
+        self.access = util.get_access_method(method.get_access_flags())
+
         desc = method.get_descriptor()
-        self.type = util.get_type(desc.split(')')[-1])
+        self.type = desc.split(')')[-1]
         self.params_type = util.get_params_type(desc)
 
         self.exceptions = methanalysis.exceptions.exceptions
@@ -69,7 +71,7 @@ class DvMethod():
             logger.debug('No code : %s %s', self.name, self.cls_name)
         else:
             start = code.registers_size - code.ins_size
-            if 0x8 not in self.access:
+            if 'static' not in self.access:
                 self.var_to_name[start] = ThisParam(start, self.name)
                 self.lparams.append(start)
                 start += 1
@@ -77,9 +79,9 @@ class DvMethod():
             for ptype in self.params_type:
                 param = start + num_param
                 self.lparams.append(param)
-                self.var_to_name.setdefault(param, Param(param, ptype))
+                self.var_to_name[param] = Param(param, ptype)
                 num_param += util.get_type_size(ptype)
-        if 0:
+        if not __debug__:
             from androguard.core import bytecode
             bytecode.method2png('/tmp/dad/graphs/%s#%s.png' % \
                 (self.cls_name.split('/')[-1][:-1], self.name), methanalysis)
@@ -89,19 +91,24 @@ class DvMethod():
 
         # Native methods... no blocks.
         if self.start_block is None:
-            return logger.debug('Native Method.')
+            logger.debug('Native Method.')
+            self.writer = Writer(None, self)
+            self.writer.write_method()
+            return
 
         graph = construct(self.start_block, self.var_to_name, self.exceptions)
         self.graph = graph
 
-        if 0:
+        if not __debug__:
             util.create_png(self.cls_name, self.name, graph, '/tmp/dad/blocks')
 
-        defs, uses = build_def_use(graph, self.lparams)
-        dead_code_elimination(graph, uses, defs)
-        register_propagation(graph, uses, defs)
-        del uses, defs
+        use_defs, def_uses = build_def_use(graph, self.lparams)
+        split_variables(graph, self.var_to_name, def_uses, use_defs)
+        dead_code_elimination(graph, def_uses, use_defs)
+        register_propagation(graph, def_uses, use_defs)
 
+        place_declarations(graph, self.var_to_name, def_uses, use_defs)
+        del def_uses, use_defs
         # After the DCE pass, some nodes may be empty, so we can simplify the
         # graph to delete these nodes.
         # We start by restructuring the graph by spliting the conditional nodes
@@ -109,13 +116,17 @@ class DvMethod():
         graph.split_if_nodes()
         # We then simplify the graph by merging multiple statement nodes into
         # a single statement node when possible. This also delete empty nodes.
+
         graph.simplify()
-        graph.reset_rpo()
+        graph.compute_rpo()
 
-        idoms = graph.immediate_dominators()
-        identify_structures(graph, idoms)
+        if not __debug__:
+            util.create_png(self.cls_name, self.name, graph,
+                                                    '/tmp/dad/pre-structured')
 
-        if 0:
+        identify_structures(graph, graph.immediate_dominators())
+
+        if not __debug__:
             util.create_png(self.cls_name, self.name, graph,
                                                     '/tmp/dad/structured')
 
@@ -124,16 +135,21 @@ class DvMethod():
         del graph
 
     def show_source(self):
-        if self.writer:
-            print self.writer
+        print self.get_source()
 
     def get_source(self):
         if self.writer:
             return '%s' % self.writer
         return ''
 
+    def get_source_ext(self):
+        if self.writer:
+            return self.writer.str_ext()
+        return []
+
     def __repr__(self):
-        return 'Method %s' % self.name
+        #return 'Method %s' % self.name
+        return 'class DvMethod: %s' % self.name
 
 
 class DvClass():
@@ -156,9 +172,16 @@ class DvClass():
         self.inner = False
 
         access = dvclass.get_access_flags()
-        self.access = [util.ACCESS_FLAGS_CLASSES.get(flag) for flag in
-                            util.ACCESS_FLAGS_CLASSES if flag & access]
-        self.prototype = '%s class %s' % (' '.join(self.access), self.name)
+        # If interface we remove the class and abstract keywords
+        if 0x200 & access:
+            prototype = '%s %s'
+            if access & 0x400:
+                access -= 0x400
+        else:
+            prototype = '%s class %s'
+
+        self.access = util.get_access_class(access)
+        self.prototype = prototype % (' '.join(self.access), self.name)
 
         self.interfaces = dvclass.interfaces
         self.superclass = dvclass.get_superclassname()
@@ -213,12 +236,20 @@ class DvClass():
                         [n[1:-1].replace('/', '.') for n in interfaces])
 
         source.append('%s {\n' % self.prototype)
-        for field in self.fields.values():
-            access = [util.ACCESS_FLAGS_FIELDS.get(flag) for flag in
-                util.ACCESS_FLAGS_FIELDS if flag & field.get_access_flags()]
+        for name, field in sorted(self.fields.iteritems()):
+            access = util.get_access_field(field.get_access_flags())
             f_type = util.get_type(field.get_descriptor())
-            name = field.get_name()
-            source.append('    %s %s %s;\n' % (' '.join(access), f_type, name))
+            source.append('    ')
+            if access:
+                source.append(' '.join(access))
+                source.append(' ')
+            if field.init_value:
+                value = field.init_value.value
+                if f_type == 'String':
+                    value = '"%s"' % value
+                source.append('%s %s = %s;\n' % (f_type, name, value))
+            else:
+                source.append('%s %s;\n' % (f_type, name))
 
         for klass in self.subclasses.values():
             source.append(klass.get_source())
@@ -229,36 +260,62 @@ class DvClass():
         source.append('}\n')
         return ''.join(source)
 
-    def show_source(self):
+    #NB: we cannot call it several times in a row because
+    #    some fields are rewritten based on their old value
+    #    such as self.superclass for instance
+    def get_source_ext(self):
+        source = []
         if not self.inner and self.package:
-            print 'package %s;\n' % self.package
+            source.append(('PACKAGE', [('PACKAGE_START', 'package '), ('NAME_PACKAGE', '%s' % self.package), ('PACKAGE_END', ';\n')]))
 
+        list_proto = []
+        list_proto.append(('PROTOTYPE_ACCESS', '%s class ' % ' '.join(self.access)))
+        list_proto.append(('NAME_PROTOTYPE', '%s' % self.name, self.package))
         if self.superclass is not None:
             self.superclass = self.superclass[1:-1].replace('/', '.')
             if self.superclass.split('.')[-1] == 'Object':
                 self.superclass = None
             if self.superclass is not None:
-                self.prototype += ' extends %s' % self.superclass
+                list_proto.append(('EXTEND',' extends '))
+                list_proto.append(('NAME_SUPERCLASS', '%s' % self.superclass))
         if self.interfaces is not None:
             interfaces = self.interfaces[1:-1].split(' ')
-            self.prototype += ' implements %s' % ', '.join(
-                        [n[1:-1].replace('/', '.') for n in interfaces])
+            list_proto.append(('IMPLEMENTS', ' implements '))
+            for i in range(len(interfaces)):
+                if i != 0:
+                    list_proto.append(('COMMA',', '))
+                list_proto.append(('NAME_INTERFACE', interfaces[i][1:-1].replace('/', '.')))
+        list_proto.append(('PROTOTYPE_END', ' {\n'))
+        source.append(("PROTOTYPE", list_proto))
 
-        print '%s {\n' % self.prototype
         for field in self.fields.values():
-            access = [util.ACCESS_FLAGS_FIELDS.get(flag) for flag in
-                util.ACCESS_FLAGS_FIELDS if flag & field.get_access_flags()]
+            field_access_flags = field.get_access_flags()
+            access = [util.ACCESS_FLAGS_FIELDS[flag] for flag in
+                        util.ACCESS_FLAGS_FIELDS if flag & field_access_flags]
             f_type = util.get_type(field.get_descriptor())
             name = field.get_name()
-            print '    %s %s %s;\n' % (' '.join(access), f_type, name)
+            if access:
+                access_str = '    %s ' % ' '.join(access)
+            else:
+                access_str = '    '
+            source.append(('FIELD', [('FIELD_ACCESS', access_str),
+                                     ('FIELD_TYPE', '%s' % f_type),
+                                     ('SPACE', ' '),
+                                     ('NAME_FIELD', '%s' % name, f_type, field),
+                                     ('FIELD_END', ';\n')]))
 
+        #TODO: call get_source_ext for each subclass?
         for klass in self.subclasses.values():
-            klass.show_source()
+            source.append((klass, klass.get_source()))
 
         for _, method in self.methods.iteritems():
             if isinstance(method, DvMethod):
-                method.show_source()
-        print '}\n'
+                source.append(("METHOD", method.get_source_ext()))
+        source.append(("CLASS_END", [('CLASS_END', '}\n')]))
+        return source
+
+    def show_source(self):
+        print self.get_source()
 
     def __repr__(self):
         if not self.subclasses:
@@ -269,6 +326,8 @@ class DvClass():
 class DvMachine():
     def __init__(self, name):
         vm = auto_vm(name)
+        if vm is None:
+            raise ValueError('Format not recognised: %s' % name)
         self.vma = analysis.uVMAnalysis(vm)
         self.classes = dict((dvclass.get_name(), dvclass)
                             for dvclass in vm.get_classes())
@@ -299,7 +358,7 @@ class DvMachine():
             klass.show_source()
 
     def process_and_show(self):
-        for name, klass in self.classes.iteritems():
+        for name, klass in sorted(self.classes.iteritems()):
             logger.info('Processing class: %s', name)
             if not isinstance(klass, DvClass):
                 klass = DvClass(klass, self.vma)
@@ -312,12 +371,14 @@ sys.setrecursionlimit(5000)
 
 
 def main():
+    # logger.setLevel(logging.DEBUG) for debugging output
+    # comment the line to disable the logging.
     logger.setLevel(logging.INFO)
     console_hdlr = logging.StreamHandler(sys.stdout)
     console_hdlr.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
     logger.addHandler(console_hdlr)
 
-    default_file = 'examples/android/TestsAndroguard/bin/classes.dex'
+    default_file = 'examples/android/TestsAndroguard/bin/TestActivity.apk'
     if len(sys.argv) > 1:
         machine = DvMachine(sys.argv[1])
     else:
@@ -325,7 +386,7 @@ def main():
 
     logger.info('========================')
     logger.info('Classes:')
-    for class_name in machine.get_classes():
+    for class_name in sorted(machine.get_classes()):
         logger.info(' %s', class_name)
     logger.info('========================')
 
@@ -333,7 +394,7 @@ def main():
     if cls_name == '*':
         machine.process_and_show()
     else:
-        cls = machine.get_class(cls_name)
+        cls = machine.get_class(cls_name.decode('utf8'))
         if cls is None:
             logger.error('%s not found.', cls_name)
         else:
@@ -353,3 +414,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

@@ -3,22 +3,21 @@
 # Copyright (C) 2012, Anthony Desnos <desnos at t0t0.fr>
 # All rights reserved.
 #
-# Androguard is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Androguard is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# You should have received a copy of the GNU Lesser General Public License
-# along with Androguard.  If not, see <http://www.gnu.org/licenses/>.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS-IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import re, random, string, cPickle
 
-from androguard.core.androconf import error, warning
+from androguard.core.androconf import error, warning, debug, is_ascii_problem
 from androguard.core.bytecodes import jvm, dvm
 from androguard.core.bytecodes.api_permissions import DVM_PERMISSIONS_BY_PERMISSION, DVM_PERMISSIONS_BY_ELEMENT
 
@@ -956,6 +955,7 @@ DVM_FIELDS_ACCESS = {
       "sput-short" : "W",
    }
 
+
 class DVMBasicBlock:
     """
         A simple basic block of a dalvik method
@@ -982,6 +982,20 @@ class DVMBasicBlock:
         self.tainted_variables = self.context.get_tainted_variables()
         self.tainted_packages = self.context.get_tainted_packages()
 
+        self.notes = []
+
+    def get_notes(self):
+        return self.notes
+
+    def set_notes(self, value):
+        self.notes = [value]
+
+    def add_note(self, note):
+        self.notes.append(note)
+
+    def clear_notes(self):
+        self.notes = []
+
     def get_instructions(self):
       """
         Get all instructions from a basic block.
@@ -1004,7 +1018,7 @@ class DVMBasicBlock:
         return self.method
 
     def get_name(self):
-        return self.name
+        return "%s-BB@0x%x" % (self.method.get_name(), self.start)
 
     def get_start(self):
         return self.start
@@ -1055,7 +1069,7 @@ class DVMBasicBlock:
                 c[2].set_fathers( ( c[1], c[0], self ) )
 
     def push(self, i):
-      try :
+      try:
             self.nb_instructions += 1
             idx = self.end
             self.last_length = i.get_length()
@@ -1063,36 +1077,36 @@ class DVMBasicBlock:
 
             op_value = i.get_op_value()
 
-            #if i.get_name() in DVM_FIELDS_ACCESS :
-            if (op_value >= 0x52 and op_value <= 0x6d) :
-                desc = self.__vm.get_cm_field( i.get_ref_kind() )
-                if self.tainted_variables != None :
-                    self.tainted_variables.push_info( TAINTED_FIELD, desc, DVM_FIELDS_ACCESS[ i.get_name() ][0], idx, self.method )
+            # field access
+            if (op_value >= 0x52 and op_value <= 0x6d):
+                desc = self.__vm.get_cm_field(i.get_ref_kind())
+                if self.tainted_variables != None:
+                    self.tainted_variables.push_info(TAINTED_FIELD, desc, DVM_FIELDS_ACCESS[i.get_name()][0], idx, self.method)
 
-            #elif "invoke" in i.get_name() :
-            elif (op_value >= 0x6e and op_value <= 0x72) or (op_value >= 0x74 and op_value <= 0x78) :
+            # invoke
+            elif (op_value >= 0x6e and op_value <= 0x72) or (op_value >= 0x74 and op_value <= 0x78):
                 idx_meth = i.get_ref_kind()
-                method_info = self.__vm.get_cm_method( idx_meth )
-                if self.tainted_packages != None :
-                    self.tainted_packages.push_info( method_info[0], TAINTED_PACKAGE_CALL, idx, self.method, idx_meth )
+                method_info = self.__vm.get_cm_method(idx_meth)
+                if self.tainted_packages != None:
+                    self.tainted_packages.push_info(method_info[0], TAINTED_PACKAGE_CALL, idx, self.method, idx_meth)
 
-            #elif "new-instance" in i.get_name() :
-            elif op_value == 0x22 :
+            # new_instance
+            elif op_value == 0x22:
                 idx_type = i.get_ref_kind()
-                type_info = self.__vm.get_cm_type( idx_type )
-                if self.tainted_packages != None :
-                    self.tainted_packages.push_info( type_info, TAINTED_PACKAGE_CREATE, idx, self.method, None )
+                type_info = self.__vm.get_cm_type(idx_type)
+                if self.tainted_packages != None:
+                    self.tainted_packages.push_info(type_info, TAINTED_PACKAGE_CREATE, idx, self.method, None)
 
-            #elif "const-string" in i.get_name() :
-            elif (op_value >= 0x1a and op_value <= 0x1b) :
-                string_name = self.__vm.get_cm_string( i.get_ref_kind() )
-                if self.tainted_variables != None :
-                    self.tainted_variables.push_info( TAINTED_STRING, string_name, "R", idx, self.method )
+            # const-string
+            elif (op_value >= 0x1a and op_value <= 0x1b):
+                string_name = self.__vm.get_cm_string(i.get_ref_kind())
+                if self.tainted_variables != None:
+                    self.tainted_variables.push_info(TAINTED_STRING, string_name, "R", idx, self.method)
 
-            elif op_value == 0x26 or (op_value >= 0x2b and op_value <= 0x2c) :
+            elif op_value == 0x26 or (op_value >= 0x2b and op_value <= 0x2c):
                 code = self.method.get_code().get_bc()
-                self.special_ins[ idx ] = code.get_ins_off( idx + i.get_ref_off() * 2 )
-      except :
+                self.special_ins[idx] = code.get_ins_off(idx + i.get_ref_off() * 2)
+      except:
         pass
 
     def get_special_ins(self, idx):
@@ -1347,10 +1361,10 @@ TAINTED_PACKAGE = {
    TAINTED_PACKAGE_CREATE : "C",
    TAINTED_PACKAGE_CALL : "M"
 }
-def show_Path(vm, path) :
+def show_Path(vm, path):
   cm = vm.get_class_manager()
 
-  if isinstance(path, PathVar) :
+  if isinstance(path, PathVar):
     dst_class_name, dst_method_name, dst_descriptor =  path.get_dst( cm )
     info_var = path.get_var_info()
     print "%s %s (0x%x) ---> %s->%s%s" % (path.get_access_flag(),
@@ -1378,7 +1392,34 @@ def show_Path(vm, path) :
                                     src_class_name,
                                     src_method_name,
                                     src_descriptor,
-                                    path.get_idx() )
+                                    path.get_idx())
+
+def get_Path(vm, path):
+  x = {}
+  cm = vm.get_class_manager()
+
+  if isinstance(path, PathVar):
+    dst_class_name, dst_method_name, dst_descriptor =  path.get_dst( cm )
+    info_var = path.get_var_info()
+    x["src"] = "%s" % info_var
+    x["dst"] = "%s %s %s" % (dst_class_name, dst_method_name, dst_descriptor)
+    x["idx"] = path.get_idx()
+
+  else :
+    if path.get_access_flag() == TAINTED_PACKAGE_CALL :
+      src_class_name, src_method_name, src_descriptor =  path.get_src( cm )
+      dst_class_name, dst_method_name, dst_descriptor =  path.get_dst( cm )
+
+      x["src"] = "%s %s %s" % (src_class_name, src_method_name, src_descriptor)
+      x["dst"] = "%s %s %s" % (dst_class_name, dst_method_name, dst_descriptor)
+    else :
+      src_class_name, src_method_name, src_descriptor =  path.get_src( cm )
+      x["src"] = "%s %s %s" % (src_class_name, src_method_name, src_descriptor)
+
+    x["idx"] = path.get_idx()
+
+  return x
+
 
 def show_Paths(vm, paths) :
     """
@@ -1388,32 +1429,34 @@ def show_Paths(vm, paths) :
     for path in paths :
         show_Path( vm, path )
 
-def show_PathVariable(vm, paths) :
-    for path in paths :
+
+def show_PathVariable(vm, paths):
+    for path in paths:
       access, idx = path[0]
       m_idx = path[1]
-      method = vm.get_cm_method( m_idx )
+      method = vm.get_cm_method(m_idx)
       print "%s %x %s->%s %s" % (access, idx, method[0], method[1], method[2][0] + method[2][1])
 
-class PathP :
-  def __init__(self, access, idx, src_idx, dst_idx) :
+
+class PathP:
+  def __init__(self, access, idx, src_idx, dst_idx):
     self.access_flag = access
     self.idx = idx
     self.src_idx = src_idx
     self.dst_idx = dst_idx
 
-  def get_access_flag(self) :
+  def get_access_flag(self):
     return self.access_flag
 
-  def get_dst(self, cm) :
-    method = cm.get_method_ref( self.dst_idx )
+  def get_dst(self, cm):
+    method = cm.get_method_ref(self.dst_idx)
     return method.get_class_name(), method.get_name(), method.get_descriptor()
 
-  def get_src(self, cm) :
-    method = cm.get_method_ref( self.src_idx )
+  def get_src(self, cm):
+    method = cm.get_method_ref(self.src_idx)
     return method.get_class_name(), method.get_name(), method.get_descriptor()
 
-  def get_idx(self) :
+  def get_idx(self):
     return self.idx
 
   def get_src_idx(self):
@@ -1421,6 +1464,7 @@ class PathP :
 
   def get_dst_idx(self):
     return self.dst_idx
+
 
 class TaintedPackage:
     def __init__(self, vm, name):
@@ -1518,7 +1562,8 @@ def show_DynCode(dx) :
     paths = dx.get_tainted_packages().search_methods( "Ldalvik/system/DexClassLoader;", ".", ".")
     show_Paths( dx.get_vm(), paths )
 
-def show_NativeMethods(dx) :
+
+def show_NativeMethods(dx):
     """
         Show the native methods
         :param dx : the analysis virtual machine
@@ -1529,66 +1574,111 @@ def show_NativeMethods(dx) :
         if i.get_access_flags() & 0x100 :
             print i.get_class_name(), i.get_name(), i.get_descriptor()
 
-def show_ReflectionCode(dx) :
+
+def show_ReflectionCode(dx):
     """
         Show the reflection code 
         :param dx : the analysis virtual machine
         :type dx: a :class:`VMAnalysis` object
     """
-    paths = dx.get_tainted_packages().search_methods( "Ljava/lang/reflect/Method;", ".", ".")
-    show_Paths( dx.get_vm(), paths )
+    paths = dx.get_tainted_packages().search_methods("Ljava/lang/reflect/Method;", ".", ".")
+    show_Paths(dx.get_vm(), paths)
 
-def is_crypto_code(dx) :
+
+def is_crypto_code(dx):
     """
         Crypto code is present ?
         :param dx : the analysis virtual machine
         :type dx: a :class:`VMAnalysis` object
         :rtype: boolean
     """
-    paths = dx.get_tainted_packages().search_methods( "Ljavax/crypto/.", ".", ".")
-    if paths != [] :
+    if dx.get_tainted_packages().search_methods("Ljavax/crypto/.",
+                                                ".",
+                                                "."):
+        return True
+
+    if dx.get_tainted_packages().search_methods("Ljava/security/spec/.",
+                                                ".",
+                                                "."):
         return True
 
     return False
 
-def is_dyn_code(dx) :
+
+def is_dyn_code(dx):
     """
-        Dynamic code loading is present ?
+        Dalvik Dynamic code loading is present ?
         :param dx : the analysis virtual machine
         :type dx: a :class:`VMAnalysis` object
         :rtype: boolean
     """
-    paths = dx.get_tainted_packages().search_methods( "Ldalvik/system/DexClassLoader;", ".", ".")
-    if paths != [] :
+    if dx.get_tainted_packages().search_methods("Ldalvik/system/DexClassLoader;",
+                                                ".",
+                                                "."):
+        return True
+
+    if dx.get_tainted_packages().search_methods("Ljava/security/ClassLoader;",
+                                                "defineClass",
+                                                "."):
+        return True
+
+    if dx.get_tainted_packages().search_methods("Ljava/security/SecureClassLoader;",
+                                                "defineClass",
+                                                "."):
+        return True
+
+    if dx.get_tainted_packages().search_methods("Ljava/net/URLClassLoader;",
+                                                ".",
+                                                "."):
         return True
 
     return False
 
-def is_reflection_code(dx) :
+
+def is_reflection_code(dx):
     """
         Reflection is present ?
         :param dx : the analysis virtual machine
         :type dx: a :class:`VMAnalysis` object
         :rtype: boolean
     """
-    paths = dx.get_tainted_packages().search_methods( "Ljava/lang/reflect/Method;", ".", ".")
-    if paths != [] :
+    if dx.get_tainted_packages().search_methods("Ljava/lang/reflect/Method;",
+                                                ".",
+                                                "."):
+        return True
+
+    if dx.get_tainted_packages().search_methods("Ljava/lang/reflect/Field;",
+                                                ".",
+                                                "."):
+        return True
+
+    if dx.get_tainted_packages().search_methods("Ljava/lang/Class;",
+                                                "forName",
+                                                "."):
         return True
 
     return False
 
-def is_native_code(dx) :
+
+def is_native_code(dx):
     """
         Native code is present ?
         :param dx : the analysis virtual machine
         :type dx: a :class:`VMAnalysis` object
         :rtype: boolean
     """
-    paths = dx.get_tainted_packages().search_methods( "Ljava/lang/System;", "loadLibrary", ".")
-    if paths != [] :
+    if dx.get_tainted_packages().search_methods("Ljava/lang/System;",
+                                                "load.",
+                                                "."):
+        return True
+
+    if dx.get_tainted_packages().search_methods("Ljava/lang/Runtime;",
+                                                "load.",
+                                                "."):
         return True
 
     return False
+
 
 class TaintedPackages :
     def __init__(self, _vm) :
@@ -1856,17 +1946,20 @@ class Enum(object):
   def tuples(self):
     return tuple(enumerate(self.names))
 
-TAG_ANDROID = Enum([ 'ANDROID', 'TELEPHONY', 'ACCESSIBILITYSERVICE', 'ACCOUNTS',
-    'ANIMATION', 'APP', 'BLUETOOTH', 'CONTENT', 'DATABASE', 'DRM', 'GESTURE',
+TAG_ANDROID = Enum([ 'ANDROID', 'TELEPHONY', 'SMS', 'SMSMESSAGE', 'ACCESSIBILITYSERVICE', 'ACCOUNTS',
+    'ANIMATION', 'APP', 'BLUETOOTH', 'CONTENT', 'DATABASE', 'DEBUG', 'DRM', 'GESTURE',
     'GRAPHICS', 'HARDWARE', 'INPUTMETHODSERVICE', 'LOCATION', 'MEDIA', 'MTP',
     'NET', 'NFC', 'OPENGL', 'OS', 'PREFERENCE', 'PROVIDER', 'RENDERSCRIPT',
     'SAX', 'SECURITY', 'SERVICE', 'SPEECH', 'SUPPORT', 'TEST', 'TEXT', 'UTIL',
-    'VIEW', 'WEBKIT', 'WIDGET', 'DALVIK_BYTECODE', 'DALVIK_SYSTEM'])
+    'VIEW', 'WEBKIT', 'WIDGET', 'DALVIK_BYTECODE', 'DALVIK_SYSTEM', 'JAVA_REFLECTION'])
 
 TAG_REVERSE_ANDROID = dict((i[0], i[1]) for i in TAG_ANDROID.tuples())
 
 TAGS_ANDROID = { TAG_ANDROID.ANDROID :                  [ 0, "Landroid" ],
                  TAG_ANDROID.TELEPHONY :                [ 0, "Landroid/telephony"],
+                 TAG_ANDROID.SMS :                      [ 0, "Landroid/telephony/SmsManager"],
+                 TAG_ANDROID.SMSMESSAGE :               [ 0, "Landroid/telephony/SmsMessage"],
+                 TAG_ANDROID.DEBUG :                    [ 0, "Landroid/os/Debug"],
                  TAG_ANDROID.ACCESSIBILITYSERVICE :     [ 0, "Landroid/accessibilityservice" ],
                  TAG_ANDROID.ACCOUNTS :                 [ 0, "Landroid/accounts" ],
                  TAG_ANDROID.ANIMATION :                [ 0, "Landroid/animation" ],
@@ -1902,6 +1995,8 @@ TAGS_ANDROID = { TAG_ANDROID.ANDROID :                  [ 0, "Landroid" ],
                  TAG_ANDROID.WIDGET :                   [ 0, "Landroid/widget" ],
                  TAG_ANDROID.DALVIK_BYTECODE :          [ 0, "Ldalvik/bytecode" ],
                  TAG_ANDROID.DALVIK_SYSTEM :            [ 0, "Ldalvik/system" ],
+
+                 TAG_ANDROID.JAVA_REFLECTION :          [ 0, "Ljava/lang/reflect"],
 }
 
 class Tags :
@@ -1932,11 +2027,15 @@ class Tags :
         if self.patterns[i][1].search( classname ) != None :
           self.tags.add( i )
 
+  def get_list(self):
+    return [ self.reverse[ i ] for i in self.tags ]
+
   def __contains__(self, key) :
     return key in self.tags
 
   def __str__(self) :
     return str([ self.reverse[ i ] for i in self.tags ])
+
 
   def empty(self) :
     return self.tags == set()
@@ -1998,28 +2097,38 @@ class BasicBlocks:
     def get_basic_block_pos(self, idx):
         return self.bb[idx]
 
-class ExceptionAnalysis :
-    def __init__(self, exception, bb) :
+
+class ExceptionAnalysis:
+    def __init__(self, exception, bb):
         self.start = exception[0]
         self.end = exception[1]
 
         self.exceptions = exception[2:]
 
-        for i in self.exceptions :
-            i.append( bb.get_basic_block( i[1] ) )
+        for i in self.exceptions:
+            i.append(bb.get_basic_block(i[1]))
 
-    def show_buff(self) :
+    def show_buff(self):
         buff = "%x:%x\n" % (self.start, self.end)
 
-        for i in self.exceptions :
-            if i[2] == None :
+        for i in self.exceptions:
+            if i[2] == None:
                 buff += "\t(%s -> %x %s)\n" % (i[0], i[1], i[2])
-            else :
+            else:
                 buff += "\t(%s -> %x %s)\n" % (i[0], i[1], i[2].get_name())
 
         return buff[:-1]
 
-class Exceptions :
+    def get(self):
+        d = {"start": self.start, "end": self.end, "list": []}
+
+        for i in self.exceptions:
+            d["list"].append({"name": i[0], "idx": i[1], "bb": i[2].get_name()})
+
+        return d
+
+
+class Exceptions:
     def __init__(self, _vm) :
         self.__vm = _vm
         self.exceptions = []
@@ -2053,7 +2162,8 @@ BO["BasicOPCODES_H"] = []
 for i in BO["BasicOPCODES"] :
   BO["BasicOPCODES_H"].append( re.compile( i ) )
 
-class MethodAnalysis :
+
+class MethodAnalysis:
     """
         This class analyses in details a method of a class/dex file
 
@@ -2069,15 +2179,15 @@ class MethodAnalysis :
 
         self.tainted = tv
 
-        self.basic_blocks = BasicBlocks( self.__vm, self.tainted )
-        self.exceptions = Exceptions( self.__vm )
+        self.basic_blocks = BasicBlocks(self.__vm, self.tainted)
+        self.exceptions = Exceptions(self.__vm)
 
         code = self.method.get_code()
-        if code == None :
+        if code == None:
             return
 
-        current_basic = BO["BasicClass"]( 0, self.__vm, self.method, self.basic_blocks )
-        self.basic_blocks.push( current_basic )
+        current_basic = BO["BasicClass"](0, self.__vm, self.method, self.basic_blocks)
+        self.basic_blocks.push(current_basic)
 
         ##########################################################
 
@@ -2086,55 +2196,62 @@ class MethodAnalysis :
         h = {}
         idx = 0
 
-        instructions = [ i for i in bc.get_instructions() ]
-        for i in instructions :
-            for j in BO["BasicOPCODES_H"] :
-                if j.match(i.get_name()) != None :
-                    v = BO["Dnext"]( i, idx, self.method )
+        debug("Parsing instructions")
+        instructions = [i for i in bc.get_instructions()]
+        for i in instructions:
+            for j in BO["BasicOPCODES_H"]:
+                if j.match(i.get_name()) != None:
+                    v = BO["Dnext"](i, idx, self.method)
                     h[ idx ] = v
-                    l.extend( v )
+                    l.extend(v)
                     break
 
             idx += i.get_length()
 
+        debug("Parsing exceptions")
         excepts = BO["Dexception"]( self.__vm, self.method )
         for i in excepts:
             l.extend( [i[0]] )
             for handler in i[2:] :
                 l.append( handler[1] )
 
+        debug("Creating basic blocks")
         idx = 0
-        for i in instructions :
+        for i in instructions:
             # index is a destination
-            if idx in l :
-                if current_basic.get_nb_instructions() != 0 :
-                    current_basic = BO["BasicClass"]( current_basic.get_end(), self.__vm, self.method, self.basic_blocks )
-                    self.basic_blocks.push( current_basic )
+            if idx in l:
+                if current_basic.get_nb_instructions() != 0:
+                    current_basic = BO["BasicClass"](current_basic.get_end(), self.__vm, self.method, self.basic_blocks)
+                    self.basic_blocks.push(current_basic)
 
-            current_basic.push( i )
+            current_basic.push(i)
 
             # index is a branch instruction
-            if idx in h :
+            if idx in h:
                 current_basic = BO["BasicClass"]( current_basic.get_end(), self.__vm, self.method, self.basic_blocks )
                 self.basic_blocks.push( current_basic )
 
             idx += i.get_length()
 
-        if current_basic.get_nb_instructions() == 0 :
-            self.basic_blocks.pop( -1 )
+        if current_basic.get_nb_instructions() == 0:
+            self.basic_blocks.pop(-1)
 
-        for i in self.basic_blocks.get() :
+        debug("Settings basic blocks childs")
+
+        for i in self.basic_blocks.get():
             try :
                 i.set_childs( h[ i.end - i.get_last_length() ] )
             except KeyError :
                 i.set_childs( [] )
 
+        debug("Creating exceptions")
+
         # Create exceptions
         self.exceptions.add(excepts, self.basic_blocks)
 
-        for i in self.basic_blocks.get() :
+        for i in self.basic_blocks.get():
             # setup exception by basic block
-            i.set_exception_analysis( self.exceptions.get_exception( i.start, i.end - 1 ) )
+            i.set_exception_analysis(self.exceptions.get_exception( i.start, i.end - 1 ))
 
         del instructions
         del h, l
@@ -2144,6 +2261,7 @@ class MethodAnalysis :
             :rtype: a :class:`BasicBlocks` object
         """
         return self.basic_blocks
+
     def get_length(self) :
         """
             :rtype: an integer which is the length of the code
@@ -2224,7 +2342,8 @@ SIGNATURES = {
 
 from sign import Signature
 
-class VMAnalysis :
+
+class VMAnalysis:
     """
        This class analyses a dex file
 
@@ -2398,8 +2517,8 @@ class uVMAnalysis(VMAnalysis) :
 
   def get_methods(self) :
     self.resolve = True
-    for i in self.vm.get_methods() :
-      yield MethodAnalysis( self.vm, i, self )
+    for i in self.vm.get_methods():
+      yield MethodAnalysis(self.vm, i, self)
 
   def get_method(self, method) :
     return MethodAnalysis( self.vm, method, None )
@@ -2409,7 +2528,7 @@ class uVMAnalysis(VMAnalysis) :
 
   def _resolve(self) :
     if self.resolve == False :
-      for i in self.get_methods() :
+      for i in self.get_methods():
         pass
 
   def get_tainted_packages(self) :
@@ -2419,3 +2538,13 @@ class uVMAnalysis(VMAnalysis) :
   def get_tainted_variables(self) :
         self._resolve()
         return self.tainted_variables
+
+
+def is_ascii_obfuscation(vm):
+    for classe in vm.get_classes():
+        if is_ascii_problem(classe.get_name()):
+            return True
+        for method in classe.get_methods():
+            if is_ascii_problem(method.get_name()):
+                return True
+    return False

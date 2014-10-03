@@ -1,32 +1,38 @@
 # This file is part of Androguard.
 #
-# Copyright (C) 2012, Anthony Desnos <desnos at t0t0.fr>
+# Copyright (C) 2012/2013, Anthony Desnos <desnos at t0t0.fr>
 # All rights reserved.
 #
-# Androguard is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Androguard is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# You should have received a copy of the GNU Lesser General Public License
-# along with Androguard.  If not, see <http://www.gnu.org/licenses/>.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS-IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+import hashlib
+from xml.sax.saxutils import escape
 from struct import unpack, pack
+import textwrap
 
-from androconf import Color, warning, error, CONF, disable_colors, enable_colors, remove_colors, save_colors
+import json
+from androconf import warning, error, CONF, enable_colors, remove_colors, save_colors, color_range
 
-def disable_print_colors() :
+
+def disable_print_colors():
   colors = save_colors()
   remove_colors()
-  return colors 
+  return colors
 
-def enable_print_colors(colors) :
+
+def enable_print_colors(colors):
   enable_colors(colors)
+
 
 # Handle exit message
 def Exit( msg ):
@@ -70,27 +76,32 @@ def _Print(name, arg) :
 
     print buff
 
-def PrettyShowEx( exceptions ) :
-    if len(exceptions) > 0 :
+
+def PrettyShowEx(exceptions):
+    if len(exceptions) > 0:
         CONF["PRINT_FCT"]("Exceptions:\n")
-        for i in exceptions : 
+        for i in exceptions:
           CONF["PRINT_FCT"]("\t%s%s%s\n" % (CONF["COLORS"]["EXCEPTION"], i.show_buff(), CONF["COLORS"]["NORMAL"]))
 
-def _PrintXRef(tag, items) :
+
+def _PrintXRef(tag, items):
   print_fct = CONF["PRINT_FCT"]
-  for i in items :
+  for i in items:
     print_fct("%s: %s %s %s %s\n" % (tag, i[0].get_class_name(), i[0].get_name(), i[0].get_descriptor(), ' '.join("%x" % j.get_idx() for j in i[1])))
 
-def _PrintDRef(tag, items) :
-  print_fct = CONF["PRINT_FCT"]
-  for i in items :
-    print_fct( "%s: %s %s %s %s\n" % (tag, i[0].get_class_name(), i[0].get_name(), i[0].get_descriptor(), ' '.join("%x" % j for j in i[1]) ) )
 
-def _PrintDefault(msg) :
+def _PrintDRef(tag, items):
+  print_fct = CONF["PRINT_FCT"]
+  for i in items:
+    print_fct("%s: %s %s %s %s\n" % (tag, i[0].get_class_name(), i[0].get_name(), i[0].get_descriptor(), ' '.join("%x" % j for j in i[1])))
+
+
+def _PrintDefault(msg):
   print_fct = CONF["PRINT_FCT"]
   print_fct(msg)
 
-def PrettyShow( basic_blocks, notes={} ) :
+
+def PrettyShow(m_a, basic_blocks, notes={}):
     idx = 0
     nb = 0
 
@@ -105,107 +116,251 @@ def PrettyShow( basic_blocks, notes={} ) :
     normal_color = CONF["COLORS"]["NORMAL"]
     print_fct = CONF["PRINT_FCT"]
 
-    for i in basic_blocks :
-        print_fct("%s%s%s : \n" % (bb_color, i.name, normal_color))
-        instructions = i.get_instructions()
-        for ins in instructions :
-        #for ins in i.ins :
+    colors = CONF["COLORS"]["OUTPUT"]
 
-            if nb in notes :
-              for note in notes[nb] :
+    for i in basic_blocks:
+        print_fct("%s%s%s : \n" % (bb_color, i.get_name(), normal_color))
+        instructions = i.get_instructions()
+        for ins in instructions:
+            if nb in notes:
+              for note in notes[nb]:
                 _PrintNote(note, 1)
 
             print_fct("\t%s%-3d%s(%s%08x%s) " % (offset_color, nb, normal_color, offset_addr_color, idx, normal_color))
-            print_fct("%s%-20s%s %s" %(instruction_name_color, ins.get_name(), normal_color, ins.get_output(idx)))
+            print_fct("%s%-20s%s" % (instruction_name_color, ins.get_name(), normal_color))
+
+            operands = ins.get_operands()
+            print_fct("%s" % ", ".join(m_a.get_vm().colorize_operands(operands, colors)))
 
             op_value = ins.get_op_value()
-            if ins == instructions[-1] and i.childs != [] :
+            if ins == instructions[-1] and i.childs:
                 print_fct(" ")
 
                 # packed/sparse-switch
-                if (op_value == 0x2b or op_value == 0x2c) and len(i.childs) > 1 :
+                if (op_value == 0x2b or op_value == 0x2c) and len(i.childs) > 1:
                       values = i.get_special_ins(idx).get_values()
-                      print_fct("%s[ D:%s%s " % (branch_false_color, i.childs[0][2].name, branch_color))
-                      print_fct(' '.join("%d:%s" % (values[j], i.childs[j+1][2].name) for j in range(0, len(i.childs)-1) ) + " ]%s" % normal_color)
-                else :
-                    if len(i.childs) == 2 :
-                        print_fct("%s[ %s%s " % (branch_false_color, i.childs[0][2].name, branch_true_color))
-                        print_fct(' '.join("%s" % c[2].name for c in i.childs[1:]) + " ]%s" % normal_color)
-                    else :
-                        print_fct("%s[ " % branch_color + ' '.join("%s" % c[2].name for c in i.childs) + " ]%s" % normal_color)
+                      print_fct("%s[ D:%s%s " % (branch_false_color, i.childs[0][2].get_name(), branch_color))
+                      print_fct(' '.join("%d:%s" % (values[j], i.childs[j + 1][2].get_name()) for j in range(0, len(i.childs) - 1)) + " ]%s" % normal_color)
+                else:
+                    if len(i.childs) == 2:
+                        print_fct("%s[ %s%s " % (branch_false_color, i.childs[0][2].get_name(), branch_true_color))
+                        print_fct(' '.join("%s" % c[2].get_name() for c in i.childs[1:]) + " ]%s" % normal_color)
+                    else:
+                        print_fct("%s[ " % branch_color + ' '.join("%s" % c[2].get_name() for c in i.childs) + " ]%s" % normal_color)
 
             idx += ins.get_length()
             nb += 1
 
             print_fct("\n")
 
-        if i.get_exception_analysis() != None :
+        if i.get_exception_analysis():
           print_fct("\t%s%s%s\n" % (exception_color, i.exception_analysis.show_buff(), normal_color))
 
         print_fct("\n")
 
-def method2dot( mx ) :
+
+def method2dot(mx, colors={}):
     """
-        Export analysis method to dot format 
+        Export analysis method to dot format
 
         @param mx : MethodAnalysis object
+        @param colors : MethodAnalysis object
 
-        @rtype : dot format buffer
+        @rtype : dot format buffer (it is a subgraph (dict))
     """
 
-    vm = mx.get_vm()
-    buff = ""
-    for i in mx.basic_blocks.get() :
-        val = "green"
-        if len(i.childs) > 1 :
-            val = "red"
-        elif len(i.childs) == 1 :
-            val = "blue"
+    colors = colors or {"true_branch": "green",
+                        "false_branch": "red",
+                        "default_branch": "purple",
+                        "jump_branch": "blue",
+                        "bg_idx": "lightgray",
+                        "idx": "blue",
+                        "bg_start_idx": "yellow",
+                        "bg_instruction": "lightgray",
+                        "instruction_name": "black",
+                        "instructions_operands": "yellow",
 
-        for j in i.childs :
-            buff += "\"%s\" -> \"%s\" [color=\"%s\"];\n" % ( i.get_name(), j[-1].get_name(), val )
-            if val == "red" :
-                val = "green"
+                        "raw": "red",
+                        "string": "red",
+                        "literal": "green",
+                        "offset": "#4000FF",
+                        "method": "#DF3A01",
+                        "field": "#088A08",
+                        "type": "#0000FF",
 
-        idx = i.start
-        label = ""
-        for ins in i.get_instructions() :
-            label += "%x %s\l" % (idx, vm.dotbuff(ins, idx))
-            idx += ins.get_length()
+                        "registers_range": ("#999933", "#6666FF")
+                        }
 
-        buff +=  "\"%s\" [color=\"lightgray\", label=\"%s\"]\n" % (i.get_name(), label)
-    return buff
+    node_tpl = "\nstruct_%s [label=<\n<TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"3\">\n%s</TABLE>>];\n"
+    label_tpl = "<TR><TD ALIGN=\"LEFT\" BGCOLOR=\"%s\"> <FONT FACE=\"Times-Bold\" color=\"%s\">%x</FONT> </TD><TD ALIGN=\"LEFT\" BGCOLOR=\"%s\"> <FONT FACE=\"Times-Bold\" color=\"%s\">%s </FONT> %s </TD></TR>\n"
+    link_tpl = "<TR><TD PORT=\"%s\"></TD></TR>\n"
 
-def method2format( output, _format="png", mx = None, raw = False ) :
+    edges_html = ""
+    blocks_html = ""
+
+    method = mx.get_method()
+    sha256 = hashlib.sha256("%s%s%s" % (mx.get_method().get_class_name(), mx.get_method().get_name(), mx.get_method().get_descriptor())).hexdigest()
+
+    registers = {}
+    if method.get_code():
+        for DVMBasicMethodBlock in mx.basic_blocks.gets():
+            for DVMBasicMethodBlockInstruction in DVMBasicMethodBlock.get_instructions():
+                operands = DVMBasicMethodBlockInstruction.get_operands(0)
+                for register in operands:
+                    if register[0] == 0:
+                        if register[1] not in registers:
+                            registers[register[1]] = 0
+                        registers[register[1]] += 1
+#        for i in range(method.get_code().get_registers_size()):
+#            registers[i] = 0
+
+    if registers:
+        registers_colors = color_range(colors["registers_range"][0],
+                                       colors["registers_range"][1],
+                                       len(registers))
+        for i in registers:
+            registers[i] = registers_colors.pop(0)
+
+    new_links = []
+
+    for DVMBasicMethodBlock in mx.basic_blocks.gets():
+        ins_idx = DVMBasicMethodBlock.start
+        block_id = hashlib.md5(sha256 + DVMBasicMethodBlock.get_name()).hexdigest()
+
+        content = link_tpl % 'header'
+
+        for DVMBasicMethodBlockInstruction in DVMBasicMethodBlock.get_instructions():
+            if DVMBasicMethodBlockInstruction.get_op_value() == 0x2b or DVMBasicMethodBlockInstruction.get_op_value() == 0x2c:
+                new_links.append((DVMBasicMethodBlock, ins_idx, DVMBasicMethodBlockInstruction.get_ref_off() * 2 + ins_idx))
+            elif DVMBasicMethodBlockInstruction.get_op_value() == 0x26:
+                new_links.append((DVMBasicMethodBlock, ins_idx, DVMBasicMethodBlockInstruction.get_ref_off() * 2 + ins_idx))
+
+            operands = DVMBasicMethodBlockInstruction.get_operands(ins_idx)
+            output = ", ".join(mx.get_vm().get_operand_html(i, registers, colors, escape, textwrap.wrap) for i in operands)
+
+            formatted_operands = DVMBasicMethodBlockInstruction.get_formatted_operands()
+            if formatted_operands:
+                output += " ; %s" % str(formatted_operands)
+
+            bg_idx = colors["bg_idx"]
+            if ins_idx == 0 and "bg_start_idx" in colors:
+                bg_idx = colors["bg_start_idx"]
+
+            content += label_tpl % (bg_idx,
+                                    colors["idx"],
+                                    ins_idx,
+                                    colors["bg_instruction"],
+                                    colors["instruction_name"],
+                                    DVMBasicMethodBlockInstruction.get_name(),
+                                    output)
+
+            ins_idx += DVMBasicMethodBlockInstruction.get_length()
+            last_instru = DVMBasicMethodBlockInstruction
+
+        # all blocks from one method parsed
+        # updating dot HTML content
+        content += link_tpl % 'tail'
+        blocks_html += node_tpl % (block_id, content)
+
+        # Block edges color treatment (conditional branchs colors)
+        val = colors["true_branch"]
+        if len(DVMBasicMethodBlock.childs) > 1:
+            val = colors["false_branch"]
+        elif len(DVMBasicMethodBlock.childs) == 1:
+            val = colors["jump_branch"]
+
+        values = None
+        if (last_instru.get_op_value() == 0x2b or last_instru.get_op_value() == 0x2c) and len(DVMBasicMethodBlock.childs) > 1:
+            val = colors["default_branch"]
+            values = ["default"]
+            values.extend(DVMBasicMethodBlock.get_special_ins(ins_idx - last_instru.get_length()).get_values())
+
+        # updating dot edges
+        for DVMBasicMethodBlockChild in DVMBasicMethodBlock.childs:
+            label_edge = ""
+
+            if values:
+                label_edge = values.pop(0)
+
+            child_id = hashlib.md5(sha256 + DVMBasicMethodBlockChild[-1].get_name()).hexdigest()
+            edges_html += "struct_%s:tail -> struct_%s:header  [color=\"%s\", label=\"%s\"];\n" % (block_id, child_id, val, label_edge)
+            # color switch
+            if val == colors["false_branch"]:
+                val = colors["true_branch"]
+            elif val == colors["default_branch"]:
+                val = colors["true_branch"]
+
+        exception_analysis = DVMBasicMethodBlock.get_exception_analysis()
+        if exception_analysis:
+            for exception_elem in exception_analysis.exceptions:
+                exception_block = exception_elem[-1]
+                if exception_block:
+                    exception_id = hashlib.md5(sha256 + exception_block.get_name()).hexdigest()
+                    edges_html += "struct_%s:tail -> struct_%s:header  [color=\"%s\", label=\"%s\"];\n" % (block_id, exception_id, "black", exception_elem[0])
+
+    for link in new_links:
+        DVMBasicMethodBlock = link[0]
+        DVMBasicMethodBlockChild = mx.basic_blocks.get_basic_block(link[2])
+
+        if DVMBasicMethodBlockChild:
+            block_id = hashlib.md5(sha256 + DVMBasicMethodBlock.get_name()).hexdigest()
+            child_id = hashlib.md5(sha256 + DVMBasicMethodBlockChild.get_name()).hexdigest()
+
+            edges_html += "struct_%s:tail -> struct_%s:header  [color=\"%s\", label=\"data(0x%x) to @0x%x\", style=\"dashed\"];\n" % (block_id, child_id, "yellow", link[1], link[2])
+
+    method_label = method.get_class_name() + "." + method.get_name() + "->" + method.get_descriptor()
+
+    method_information = method.get_information()
+    if method_information:
+        method_label += "\\nLocal registers v%d ... v%d" % (method_information["registers"][0], method_information["registers"][1])
+        if "params" in method_information:
+            for register, rtype in method_information["params"]:
+                method_label += "\\nparam v%d = %s" % (register, rtype)
+        method_label += "\\nreturn = %s" % (method_information["return"])
+
+    return {'name': method_label,
+            'nodes': blocks_html,
+            'edges': edges_html}
+
+
+def method2format(output, _format="png", mx=None, raw=None):
     """
         Export method to a specific file format
 
         @param output : output filename
         @param _format : format type (png, jpg ...) (default : png)
         @param mx : specify the MethodAnalysis object
-        @param raw : use directly a dot raw buffer
+        @param raw : use directly a dot raw buffer if None
     """
-    try :
+    try:
         import pydot
-    except ImportError :
+    except ImportError:
         error("module pydot not found")
 
-    buff = "digraph code {\n"
-    buff += "graph [bgcolor=white];\n"
-    buff += "node [color=lightgray, style=filled shape=box fontname=\"Courier\" fontsize=\"8\"];\n"
+    buff = "digraph {\n"
+    buff += "graph [rankdir=TB]\n"
+    buff += "node [shape=plaintext]\n"
 
-    if raw == False :
-        buff += method2dot( mx )
-    else :
-        buff += raw
+    if raw:
+        data = raw
+    else:
+        data = method2dot(mx)
 
-    buff += "}"
+    # subgraphs cluster
+    buff += "subgraph cluster_" + hashlib.md5(output).hexdigest() + " {\nlabel=\"%s\"\n" % data['name']
+    buff += data['nodes']
+    buff += "}\n"
 
-    d = pydot.graph_from_dot_data( buff )
-    if d :
-        getattr(d, "write_" + _format)( output )
-      
-def method2png( output, mx, raw = False ) :
+    # subgraphs edges
+    buff += data['edges']
+    buff += "}\n"
+
+    d = pydot.graph_from_dot_data(buff)
+    if d:
+        getattr(d, "write_" + _format.lower())(output)
+
+
+def method2png(output, mx, raw=False):
     """
         Export method to a png file format
 
@@ -217,12 +372,13 @@ def method2png( output, mx, raw = False ) :
         :type raw: string
     """
     buff = raw
-    if raw == False :
-        buff = method2dot( mx )
+    if raw == False:
+        buff = method2dot(mx)
 
-    method2format( output, "png", mx, buff )
+    method2format(output, "png", mx, buff)
 
-def method2jpg( output, mx, raw = False ) :
+
+def method2jpg(output, mx, raw=False):
     """
         Export method to a jpg file format
 
@@ -234,17 +390,178 @@ def method2jpg( output, mx, raw = False ) :
         :type raw: string
     """
     buff = raw
-    if raw == False :
-        buff = method2dot( mx )
+    if raw == False:
+        buff = method2dot(mx)
 
-    method2format( output, "jpg", mx, buff )
+    method2format(output, "jpg", mx, buff)
 
-class SV :
-    def __init__(self, size, buff) :
+
+def vm2json(vm):
+    d = {}
+    d["name"] = "root"
+    d["children"] = []
+
+    for _class in vm.get_classes():
+        c_class = {}
+        c_class["name"] = _class.get_name()
+        c_class["children"] = []
+
+        for method in _class.get_methods():
+            c_method = {}
+            c_method["name"] = method.get_name()
+            c_method["children"] = []
+
+            c_class["children"].append(c_method)
+
+        d["children"].append(c_class)
+
+    return json.dumps(d)
+
+
+class TmpBlock:
+    def __init__(self, name):
+        self.name = name
+
+    def get_name(self):
+        return self.name
+
+
+def method2json(mx, directed_graph=False):
+    if directed_graph:
+        return method2json_direct(mx)
+    return method2json_undirect(mx)
+
+
+def method2json_undirect(mx):
+    d = {}
+    reports = []
+    d["reports"] = reports
+
+    for DVMBasicMethodBlock in mx.basic_blocks.gets():
+        cblock = {}
+
+        cblock["BasicBlockId"] = DVMBasicMethodBlock.get_name()
+        cblock["registers"] = mx.get_method().get_code().get_registers_size()
+        cblock["instructions"] = []
+
+        ins_idx = DVMBasicMethodBlock.start
+        for DVMBasicMethodBlockInstruction in DVMBasicMethodBlock.get_instructions():
+            c_ins = {}
+            c_ins["idx"] = ins_idx
+            c_ins["name"] = DVMBasicMethodBlockInstruction.get_name()
+            c_ins["operands"] = DVMBasicMethodBlockInstruction.get_operands(ins_idx)
+
+            cblock["instructions"].append(c_ins)
+            ins_idx += DVMBasicMethodBlockInstruction.get_length()
+
+        cblock["Edge"] = []
+        for DVMBasicMethodBlockChild in DVMBasicMethodBlock.childs:
+            cblock["Edge"].append(DVMBasicMethodBlockChild[-1].get_name())
+
+        reports.append(cblock)
+
+    return json.dumps(d)
+
+
+def method2json_direct(mx):
+    d = {}
+    reports = []
+    d["reports"] = reports
+
+    hooks = {}
+
+    l = []
+    for DVMBasicMethodBlock in mx.basic_blocks.gets():
+        for index, DVMBasicMethodBlockChild in enumerate(DVMBasicMethodBlock.childs):
+            if DVMBasicMethodBlock.get_name() == DVMBasicMethodBlockChild[-1].get_name():
+
+                preblock = TmpBlock(DVMBasicMethodBlock.get_name() + "-pre")
+
+                cnblock = {}
+                cnblock["BasicBlockId"] = DVMBasicMethodBlock.get_name() + "-pre"
+                cnblock["start"] = DVMBasicMethodBlock.start
+                cnblock["notes"] = []
+
+                cnblock["Edge"] = [DVMBasicMethodBlock.get_name()]
+                cnblock["registers"] = 0
+                cnblock["instructions"] = []
+                cnblock["info_bb"] = 0
+
+                l.append(cnblock)
+
+                for parent in DVMBasicMethodBlock.fathers:
+                    hooks[parent[-1].get_name()] = []
+                    hooks[parent[-1].get_name()].append(preblock)
+
+                    for idx, child in enumerate(parent[-1].childs):
+                        if child[-1].get_name() == DVMBasicMethodBlock.get_name():
+                            hooks[parent[-1].get_name()].append(child[-1])
+
+    for DVMBasicMethodBlock in mx.basic_blocks.gets():
+        cblock = {}
+
+        cblock["BasicBlockId"] = DVMBasicMethodBlock.get_name()
+        cblock["start"] = DVMBasicMethodBlock.start
+        cblock["notes"] = DVMBasicMethodBlock.get_notes()
+
+        cblock["registers"] = mx.get_method().get_code().get_registers_size()
+        cblock["instructions"] = []
+
+        ins_idx = DVMBasicMethodBlock.start
+        last_instru = None
+        for DVMBasicMethodBlockInstruction in DVMBasicMethodBlock.get_instructions():
+            c_ins = {}
+            c_ins["idx"] = ins_idx
+            c_ins["name"] = DVMBasicMethodBlockInstruction.get_name()
+            c_ins["operands"] = DVMBasicMethodBlockInstruction.get_operands(ins_idx)
+
+            c_ins["formatted_operands"] = DVMBasicMethodBlockInstruction.get_formatted_operands()
+
+            cblock["instructions"].append(c_ins)
+
+            if (DVMBasicMethodBlockInstruction.get_op_value() == 0x2b or DVMBasicMethodBlockInstruction.get_op_value() == 0x2c):
+                values = DVMBasicMethodBlock.get_special_ins(ins_idx)
+                cblock["info_next"] = values.get_values()
+
+            ins_idx += DVMBasicMethodBlockInstruction.get_length()
+            last_instru = DVMBasicMethodBlockInstruction
+
+        cblock["info_bb"] = 0
+        if DVMBasicMethodBlock.childs:
+            if len(DVMBasicMethodBlock.childs) > 1:
+                cblock["info_bb"] = 1
+
+            if (last_instru.get_op_value() == 0x2b or last_instru.get_op_value() == 0x2c):
+                cblock["info_bb"] = 2
+
+        cblock["Edge"] = []
+        for DVMBasicMethodBlockChild in DVMBasicMethodBlock.childs:
+            ok = False
+            if DVMBasicMethodBlock.get_name() in hooks:
+                if DVMBasicMethodBlockChild[-1] in hooks[DVMBasicMethodBlock.get_name()]:
+                    ok = True
+                    cblock["Edge"].append(hooks[DVMBasicMethodBlock.get_name()][0].get_name())
+
+            if not ok:
+                cblock["Edge"].append(DVMBasicMethodBlockChild[-1].get_name())
+
+        exception_analysis = DVMBasicMethodBlock.get_exception_analysis()
+        if exception_analysis:
+            cblock["Exceptions"] = exception_analysis.get()
+
+        reports.append(cblock)
+
+    reports.extend(l)
+
+    return json.dumps(d)
+
+
+class SV:
+    def __init__(self, size, buff):
         self.__size = size
         self.__value = unpack(self.__size, buff)[0]
 
-    def _get(self) :
+    def _get(self):
         return pack(self.__size, self.__value)
 
     def __str__(self) :
@@ -350,12 +667,13 @@ class Buff :
 
         self.size = len(buff)
 
-class _Bytecode(object) :
-    def __init__(self, buff) :
+
+class _Bytecode(object):
+    def __init__(self, buff):
         try :
             import psyco
             psyco.full()
-        except ImportError :
+        except ImportError:
             pass
 
         self.__buff = buff
