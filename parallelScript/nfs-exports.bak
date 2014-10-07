@@ -17,6 +17,8 @@
 /home/lsuper/apk_data/apk1 *(no_root_squash,ro,async,no_subtree_check)
 /home/lsuper/apk_data/apk2 *(no_root_squash,ro,async,no_subtree_check)
 /home/lsuper/apk_data/apk3 *(no_root_squash,ro,async,no_subtree_check)
+/home/lsuper/apk_data/apk4 *(no_root_squash,ro,async,no_subtree_check)
+/home/lsuper/apk_data/apk5 *(no_root_squash,ro,async,no_subtree_check)
 /home/lsuper/apk_data/log/staticAnalysis/parrallelLog *(no_root_squash,rw,sync,no_subtree_check)
 /home/lsuper/projects/privacyGradePipeline/python_static_analyzer *(no_root_squash,rw,async,no_subtree_check)
 

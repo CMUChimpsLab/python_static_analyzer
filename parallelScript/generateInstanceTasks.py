@@ -10,10 +10,11 @@ from pymongo import MongoClient
 import datetime
 import os
 import errno
+import dbConfig
 today = str(datetime.date.today()).replace('-','')
 outPutPath = "notAnalyzed/" + today + '/'
 
-db = MongoClient("localhost", 27017)['androidApp']
+db = dbConfig.androidAppDB
 
 def getNonAnalyzedApks():
   apkList = []
