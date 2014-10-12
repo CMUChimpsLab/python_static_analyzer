@@ -142,10 +142,10 @@ class NameSpaceMgr:
         for string in main_package_name.split ('.'):
             tokens.append(string)
         
-        decompiledName = str ('L')
+        decompiledName = 'L'
         for string in tokens:    
-            decompiledName = decompiledName + str(string)
-            decompiledName = decompiledName + str ('/')
+            decompiledName = decompiledName + string
+            decompiledName = decompiledName + '/'
             
         
         #print decompiledName
@@ -180,8 +180,8 @@ class NameSpaceMgr:
         
         new_package_name = ""
         for string in tokens:
-            new_package_name += str (string)
-            new_package_name += str (".")
+            new_package_name += string
+            new_package_name += "."
             
         #print new_package_name
         return new_package_name
@@ -249,13 +249,13 @@ class NameSpaceMgr:
     '''
     def PrintPackageNameAtLevel (self, rootEntry, packageLevel):
         if packageLevel == 1:
-            self.packages.append (str (rootEntry.DirName))
+            self.packages.append (rootEntry.DirName)
             if (len(rootEntry.DirName) <= 3) or rootEntry.DirName.find('$')!=-1 or ('w3c' in rootEntry.DirName) or ('apache' in rootEntry.DirName) or ('xml' in rootEntry.DirName) or ('junit' in rootEntry.DirName) or ('sun' in rootEntry.DirName) or ('android' in rootEntry.DirName) or ('dalvik' in rootEntry.DirName) or ('json' in rootEntry.DirName) :
                 return
-            if (str (rootEntry.DirName) in self.alreadyPrinted):
+            if (rootEntry.DirName in self.alreadyPrinted):
                 return
             
-            ex = re.compile (str (rootEntry.DirName))
+            ex = re.compile (rootEntry.DirName)
             for maintokens in self.main_package_tokens:
                 if (ex.search (maintokens) != None):
                     return
@@ -263,13 +263,13 @@ class NameSpaceMgr:
             Printing into file as well as writing into Database
             '''
             ###self.outHandle.write (str (rootEntry.DirName))
-            if len(str (rootEntry.DirName)) > 250 :
-                name = (str (rootEntry.DirName)[:200] + '..')
+            if len(rootEntry.DirName) > 250 :
+                name = (rootEntry.DirName[:200] + '..')
             else:
-                name = str (rootEntry.DirName)
+                name = rootEntry.DirName
             self.dbMgr.insert3rdPartyPackageInfo(self.main_package_name, self.fileName, name, self.category)
             ###self.outHandle.write ("\n")
-            self.alreadyPrinted.append (str (rootEntry.DirName))
+            self.alreadyPrinted.append (rootEntry.DirName)
             return
         
         packageLevel = packageLevel - 1
@@ -292,21 +292,21 @@ class NameSpaceMgr:
             self.dbMgr.insert3rdPartyPackageInfo (self.main_package_name, self.fileName, "titanium", self.category)
             self.alreadyPrinted.append ("titanium")
         elif ancestorLevel == 1:
-            self.packages.append (str (rootEntry.DirName))
+            self.packages.append (rootEntry.DirName)
             '''Rule added to PackageRules'''
 #            if (len(rootEntry.DirName) <= 2) or ('w3c' in rootEntry.DirName) or ('apache' in rootEntry.DirName) or ('xml' in rootEntry.DirName) or ('L' in rootEntry.DirName) or ('junit' in rootEntry.DirName) or ('sun' in rootEntry.DirName) or ('android' in rootEntry.DirName) or ('dalvik' in rootEntry.DirName) or ('json' in rootEntry.DirName) :
 #                    return
             ###self.outHandle.write (str (rootEntry.DirName))
-            if len(str (rootEntry.DirName)) > 250 :
-                name = (str (rootEntry.DirName)[:200] + '..')
+            if len(rootEntry.DirName) > 250 :
+                name = (rootEntry.DirName[:200] + '..')
             else:
-                name = str (rootEntry.DirName)
+                name = rootEntry.DirName
             self.dbMgr.insert3rdPartyPackageInfo (self.main_package_name, self.fileName, name, self.category)
             ###self.outHandle.write ("\n")
-            self.alreadyPrinted.append (str (rootEntry.DirName))
+            self.alreadyPrinted.append (rootEntry.DirName)
         else:
             #google package
-            self.packages.append (str (self.main_package_name))
+            self.packages.append (self.main_package_name)
             '''Rule added to PackageRules'''
 #            if (len(rootEntry.DirName) <= 2) or ('w3c' in rootEntry.DirName) or ('apache' in rootEntry.DirName) or ('xml' in rootEntry.DirName) or ('L' in rootEntry.DirName) or ('junit' in rootEntry.DirName) or ('sun' in rootEntry.DirName) or ('android' in rootEntry.DirName) or ('dalvik' in rootEntry.DirName) or ('json' in rootEntry.DirName) :
 #                    return

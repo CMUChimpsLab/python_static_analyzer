@@ -11,7 +11,8 @@ class DBManagerClass:
     classdocs
     '''
     def __init__(self):
-        self.client = MongoClient(HOSTNAME, 27017)
+        #self.client = MongoClient(HOSTNAME, 27017)
+        self.client = MongoClient("localhost", 27017)
         self.client["admin"].authenticate(USERNAME, PASSWORD)
         self.staticAnalysisDB = self.client['staticAnalysis']
         self.androidAppDB = self.client['androidApp']
@@ -32,6 +33,8 @@ class DBManagerClass:
         #print "Rows affected after inserting permission - " + str (rows_affected)
         
     def insertLinkInfo (self, packagename, filename, link_url, is_external, triggered_by_code, externalpackagename):
+        if type(link_url) != unicode:
+            link_url = link_url.decode('UTF-8', 'ignore')
         self.staticAnalysisDB.Test_linkurl.insert({'packagename': packagename, 'filename': filename, 'link_url': link_url, 'is_external': is_external, 'triggered_by_code': triggered_by_code, 'externalpackagename': externalpackagename})
         #print "Rows affected after inserting permission - " + str (rows_affected)
         

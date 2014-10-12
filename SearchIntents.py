@@ -94,7 +94,7 @@ class Intents:
     
                     '''
                     Keeping destination class within range of mysql datatype
-   		    '''                 
+   		              '''                 
                     if len(method[0]) > 250 :
                             dst = (method[0][:200] + '..')
                     elif method[0].find('$')!=-1 :
@@ -105,37 +105,36 @@ class Intents:
                                     
                     #print method
                     if ex3.search(method[0]) != None:
-                        _,link = full
+                        _,linkStr = full
                         #print " APP - ", link
-                        if ('.png' in link)  or ('127.0.0.1' in link) or ('www.w3.org' in link):
-                            continue
-                        ###self.outHandle.write ("   APP - ")
-                        ###self.outHandle.write (link)
-                        ###self.outHandle.write ('\n')
-                        if len(link) > 250 :
-                            strlink = (link[:200] + '..')
-                        else:
-                            strlink = link
-                            
-                                               
-                        self.dbMgr.insertLinkInfo(self.main_package_name, self.fileName, strlink.decode('UTF-8', 'ignore'), False, dst, xpck)
-                        
+                        for link in re.findall("http://[\S]+", linkStr):
+                            if ('.png' in link)  or ('127.0.0.1' in link) or ('www.w3.org' in link):
+                                continue
+                            ###self.outHandle.write ("   APP - ")
+                            ###self.outHandle.write (link)
+                            ###self.outHandle.write ('\n')
+                            if len(link) > 250 :
+                                strlink = (link[:200] + '..')
+                            else:
+                                strlink = link
+                                
+                            self.dbMgr.insertLinkInfo(self.main_package_name, self.fileName, strlink, False, dst, xpck)
                     else:
-                        _,link = full
+                        _,linkStr = full
                         #print "EXTERNAL - ", link
-                        if ('.png' in link)  or ('127.0.0.1' in link) or ('www.w3.org' in link):
-                            continue
-                        ###self.outHandle.write ("   EXTERNAL - ")
-                        ###self.outHandle.write (link)
-                        ###self.outHandle.write ('\n')
-                        if len(link) > 250 :
-                            strlink = (link[:200] + '..')
-                        else:
-                            strlink = link      
+                        for link in re.findall("http://[\S]+", linkStr):
+                            if ('.png' in link)  or ('127.0.0.1' in link) or ('www.w3.org' in link):
+                                continue
+                            ###self.outHandle.write ("   EXTERNAL - ")
+                            ###self.outHandle.write (link)
+                            ###self.outHandle.write ('\n')
+                            if len(link) > 250 :
+                                strlink = (link[:200] + '..')
+                            else:
+                                strlink = link      
+                                                   
+                            self.dbMgr.insertLinkInfo(self.main_package_name, self.fileName, strlink, True, dst, xpck)
                             
-                                               
-                        self.dbMgr.insertLinkInfo(self.main_package_name, self.fileName, strlink.decode('UTF-8', 'ignore'), True, dst, xpck)
-                        
                     #access, idx = path[0]    
                     ###self.outHandle.write ('\n\n')
         #self.outHandle.close()
