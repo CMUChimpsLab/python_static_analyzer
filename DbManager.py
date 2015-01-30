@@ -1,8 +1,3 @@
-'''
-Created on Dec 8, 2012
-
-@author: psachdev
-'''
 from pymongo import MongoClient 
 from dbConfig import HOSTNAME, USERNAME, PASSWORD
 
