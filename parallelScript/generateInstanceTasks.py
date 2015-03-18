@@ -6,6 +6,10 @@ Remote instance will do analysis for its list
 The list format
 packagename fileDir
 """
+
+# Number of AWS instances used to run the static analysis
+NUM_INSTANCES = 16
+
 from pymongo import MongoClient
 import datetime
 import os
@@ -43,4 +47,4 @@ def generateListPerInstance(apkList, numberOfInstances):
 
 if __name__ == "__main__":
   apkList = getNonAnalyzedApks()
-  generateListPerInstance(apkList, 16)
+  generateListPerInstance(apkList, NUM_INSTANCES)

@@ -1,8 +1,7 @@
 #!/bin/bash
-source ./hostname.sh
-echo $HOST
 NOW=$(date +"%Y%m%d%H%M")
 Today=$(date +"%Y%m%d")
+
 #instanceArray stores all instance public ip
 instanceArray=()
 instanceArray[0]="54.235.49.118"
@@ -22,15 +21,15 @@ instanceArray[13]="54.82.3.79"
 instanceArray[14]="54.162.63.130"
 instanceArray[15]="54.198.136.8"
 echo ${instanceArray[*]}
+
 i=0
 while [ $i -lt ${#instanceArray[@]} ]; do
-  scp -i ~/20121217.pem setup.sh ubuntu@${instanceArray[$i]}:
-  ssh -i ~/20121217.pem ubuntu@${instanceArray[$i]} "export HOST=$HOST; sh -x ~/setup.sh"
+  scp -i ~/20121217.pem setup.py ubuntu@${instanceArray[$i]}:
+  ssh -i ~/20121217.pem ubuntu@${instanceArray[$i]} "python ~/setup.py"
   echo $i
-  ssh -i ~/20121217.pem ubuntu@${instanceArray[$i]} "sudo mkdir -p /home/ubuntu/parrallelLog/$NOW/instance-$i/ "
-  ssh -i ~/20121217.pem ubuntu@${instanceArray[$i]} "sudo touch /home/ubuntu/parrallelLog/$NOW/instance-$i/filelist.txt"
-  #echo "screen -dm sudo python /home/ubuntu/python_static_analyzer/main_LargeVM.py /home/ubuntu/parrallelLog/$NOW/instance-$i/ /home/ubuntu/python_static_analyzer/parallelScript/notAnalyzed/$Today/instance-$i"
-  ssh -f -i ~/20121217.pem ubuntu@${instanceArray[$i]} "screen -dm sudo python /home/ubuntu/python_static_analyzer/main_LargeVM.py /home/ubuntu/parrallelLog/$NOW/instance-$i/ /home/ubuntu/python_static_analyzer/parallelScript/notAnalyzed/$Today/instance-$i"
+  ssh -i ~/20121217.pem ubuntu@${instanceArray[$i]} "sudo mkdir -p /home/ubuntu/parallelLog/$NOW/instance-$i/ "
+  ssh -i ~/20121217.pem ubuntu@${instanceArray[$i]} "sudo touch /home/ubuntu/parallelLog/$NOW/instance-$i/filelist.txt"
+  ssh -f -i ~/20121217.pem ubuntu@${instanceArray[$i]} "screen -dm sudo python /home/ubuntu/python_static_analyzer/main_LargeVM.py /home/ubuntu/parallelLog/$NOW/instance-$i/ /home/ubuntu/python_static_analyzer/parallelScript/notAnalyzed/$Today/instance-$i"
   let i=i+1
 done
 

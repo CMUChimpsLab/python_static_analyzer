@@ -1,2 +1,3 @@
 parallelScript/notAnalyzed
 *.pyc
+*.swp
