@@ -36,19 +36,22 @@ def mountAPKDir(num):
 
 if __name__ == "__main__":
   # Mount all APK directories on the remote
+  print "Mounting apk directories..."
   for i in xrange(0, NUM_APK_DIR):
     subprocess.call(["mkdir", "apk" + str(i)])
     mountAPKDir(i)
 
   # Mount remote log directory
+  print "Mounting log directory..."
   subprocess.call(["mkdir", "parallelLog"])
-  cmd = ("sudo mount -t nfs -o addr=%s,proto=tcp,port=%d $s:%s "
+  cmd = ("sudo mount -t nfs -o addr=%s,proto=tcp,port=%d %s:%s "
       "/home/ubuntu/parallelLog") % (HOST, NFS_PORT, HOST, LOG_DIR)
   subprocess.check_output(cmd, shell=True)
 
   # Mount remote static analyzer code directory
+  print "Mounting static analyzer directory..."
   subprocess.call(["mkdir", "python_static_analyzer"])
-  cmd = ("sudo mount -t nfs -o addr=%s,proto=tcp,port=%d $s:%s "
+  cmd = ("sudo mount -t nfs -o addr=%s,proto=tcp,port=%d %s:%s "
       "/home/ubuntu/python_static_analyzer") % (HOST, NFS_PORT, HOST, ANALYZER_DIR)
   subprocess.check_output(cmd, shell=True)
 
