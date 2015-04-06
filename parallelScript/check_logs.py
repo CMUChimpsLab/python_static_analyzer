@@ -23,7 +23,7 @@ if __name__ == "__main__":
     done = BASE_LOG_DIR + "instance-" + str(i) + "/filelist.txt"
     exp = BASE_LOG_DIR + "instance-" + str(i) + "/exceptions.log"
 
-    progress = float(file_len(done))/float(file_len(assigned))
+    progress = float(file_len(done))/float(file_len(assigned)) * 100
 
     print ("Instance %d: %0.2f%%") % (i, progress),
 
