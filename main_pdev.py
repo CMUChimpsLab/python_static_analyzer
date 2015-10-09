@@ -64,16 +64,12 @@ def analyze((apkEntry, OUT)):
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-      print "Usage: python main_LargeVM.py log_file_dir apk_list_file"
+      print "Usage: python main_pdev.py log_file_dir apk_list_file"
+      print "apk list format: [package name] [directory containing the apk]"
       sys.exit(1)
 
     OUT = sys.argv[1]
-    isParallel = False
-    #for parallel running on multiple instances
-    apkListFile = None
-    if len(sys.argv) > 2:
-      apkListFile = sys.argv[2] 
-      isParallel = True
+    apkListFile = sys.argv[2] 
           
     #in case the crawler breaks, append to the list.
     analyzedApkFile = open(OUT + '/' + 'filelist.txt', 'a+')
@@ -96,16 +92,14 @@ if __name__ == '__main__':
     logger.addHandler(logFileHandler)
     
     apkList = []
-    if isParallel:
-        apkList_f = open(apkListFile)
-        for line in apkList_f:
-            pair = line.rstrip('\n').split(' ')
-            apkList.append({'packageName': pair[0], "fileDir": pair[1].replace("/home/lsuper/apk_data", "/home/ubuntu")}) 
-        apkList_f.close()
-    else:
-        apkList = list(dbMgr.androidAppDB.apkInfo.find({'isApkUpdated':True},{"fileDir":1, 'packageName':1}))
+    apkList_f = open(apkListFile)
+    for line in apkList_f:
+        pair = line.rstrip('\n').split(' ')
+        apkList.append({'packageName': pair[0], "fileDir": pair[1]}) 
+    apkList_f.close()
+
     apkList = [(entry, OUT) for entry in apkList]
-    #apkList = [({'packageName': line.rstrip('\n').replace(".apk",''), 'fileDir': '../downloads/'}, OUT) for line in open("apkList").readlines()]
+
     numberOfProcess = 4
     pool = Pool(numberOfProcess)
     for packageName in pool.imap(analyze, apkList):
