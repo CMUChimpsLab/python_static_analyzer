@@ -2,3 +2,4 @@ parallelScript/notAnalyzed
 *.pyc
 *.swp
 venv/*
+dbConfig.py
