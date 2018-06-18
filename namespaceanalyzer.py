@@ -58,7 +58,7 @@ class NameSpaceMgr:
             #should do something or not for tracking
             pass
         if "admob" not in self.alreadyPrinted and package_name.startswith('Lcom/google/ads'):
-            self.dbMgr.insert3rdPartyPackageInfo (self.main_package_name, self.fileName, "admob", self.category)
+            #self.dbMgr.insert3rdPartyPackageInfo (self.main_package_name, self.fileName, "admob", self.category)
             self.alreadyPrinted.append ("admob")
             self.packages.append ("admob")
 
@@ -67,7 +67,7 @@ class NameSpaceMgr:
         ###a = apk.APK(fileName)
         ###d = dvm.DalvikVMFormat (a.get_dex())
         ###dx = uVMAnalysis (d)
-        #self.outHandle = open (outFileName, 'a+')
+        self.outHandle = open (outFileName, 'a+')
         
         '''
         Handle to DataBase 
@@ -82,7 +82,7 @@ class NameSpaceMgr:
         self.dirEntries = []
         self.main_package_name = ""
         
-        ######self.outHandle.write ("---Package Name---\n")
+        self.outHandle.write ("---Package Name---\n")
         '''
         Keeping main package name within range of mysql datatype
         '''
@@ -102,8 +102,8 @@ class NameSpaceMgr:
             
         #print self.main_package_name
         
-        ###self.outHandle.write(fileName)
-        ###self.outHandle.write ('\n')
+        self.outHandle.write(fileName)
+        self.outHandle.write ('\n')
         self.main_package_tokens = self.GetTokens(self.main_package_name)
         
         
@@ -126,11 +126,11 @@ class NameSpaceMgr:
                 package_names.append (self.GetDirectoryName (package_name))
                 #print package_name
         
-        ###self.outHandle.write ("--External Packages---\n")
+        self.outHandle.write ("--External Packages---\n")
         self.PopulateDirEntries(package_names)
         self.GetPackages ()
         
-        #self.outHandle.close()
+        self.outHandle.close()
         return self.alreadyPrinted
         
  
@@ -262,12 +262,12 @@ class NameSpaceMgr:
             '''
             Printing into file as well as writing into Database
             '''
-            ###self.outHandle.write (str (rootEntry.DirName))
+            self.outHandle.write (str (rootEntry.DirName))
             if len(rootEntry.DirName) > 250 :
                 name = (rootEntry.DirName[:200] + '..')
             else:
                 name = rootEntry.DirName
-            self.dbMgr.insert3rdPartyPackageInfo(self.main_package_name, self.fileName, name, self.category)
+            #self.dbMgr.insert3rdPartyPackageInfo(self.main_package_name, self.fileName, name, self.category)
             ###self.outHandle.write ("\n")
             self.alreadyPrinted.append (rootEntry.DirName)
             return
@@ -289,7 +289,7 @@ class NameSpaceMgr:
             return;
         elif ancestorLevel == 3:
             ###self.outHandle.write (str ("titanium"))
-            self.dbMgr.insert3rdPartyPackageInfo (self.main_package_name, self.fileName, "titanium", self.category)
+            #self.dbMgr.insert3rdPartyPackageInfo (self.main_package_name, self.fileName, "titanium", self.category)
             self.alreadyPrinted.append ("titanium")
         elif ancestorLevel == 1:
             self.packages.append (rootEntry.DirName)
@@ -301,7 +301,7 @@ class NameSpaceMgr:
                 name = (rootEntry.DirName[:200] + '..')
             else:
                 name = rootEntry.DirName
-            self.dbMgr.insert3rdPartyPackageInfo (self.main_package_name, self.fileName, name, self.category)
+            #self.dbMgr.insert3rdPartyPackageInfo (self.main_package_name, self.fileName, name, self.category)
             ###self.outHandle.write ("\n")
             self.alreadyPrinted.append (rootEntry.DirName)
         else:
