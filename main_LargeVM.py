@@ -205,8 +205,7 @@ if __name__ == '__main__':
 
     print apkList
     for apkFile in apkList:
-        apkFile[0]['fileDir'] = re.sub('"', '', apkFile[0]['fileDir'])
-        print apkFile
+        # update_apk_entry(apkFile)
         packageName = analyze(apkFile)
         print packageName
         if packageName != "":

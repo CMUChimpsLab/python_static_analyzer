@@ -1,0 +1,212 @@
+ERROR 2018-06-21 17:14:04,865 analyze 152 
+
+ERROR 2018-06-21 17:14:04,865 analyze 153 =======================================================================
+ERROR 2018-06-21 17:14:04,865 analyze 154 
+
+ERROR 2018-06-21 17:14:04,865 analyze 155 Main : Exception occured for 8454e24cb6a249c9b2b622549c6ffe43.apk
+Traceback (most recent call last):
+  File "main_LargeVM.py", line 135, in analyze
+    d = dvm.DalvikVMFormat (a.get_dex())
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 7299, in __init__
+    self._load(buff)
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 7310, in _load
+    self.map_list = MapList( self.CM, self.__header.map_off, self )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 7192, in __init__
+    mi = MapItem( buff, self.CM )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 6692, in __init__
+    self.next(buff, cm)
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 6713, in next
+    self.item = CodeItem( self.size, buff, cm )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 6635, in __init__
+    x = DalvikCode( buff, cm )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 6443, in __init__
+    self.handlers = EncodedCatchHandlerList(buff, self.__CM)
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 3665, in __init__
+    self.list.append( EncodedCatchHandler(buff, cm) )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 3585, in __init__
+    self.handlers.append( EncodedTypeAddrPair(buff) )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 3536, in __init__
+    self.type_idx = readuleb128( buff )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 176, in readuleb128
+    result = ord( buff.read(1) )
+KeyboardInterrupt
+ERROR 2018-06-21 17:14:34,916 analyze 152 
+
+ERROR 2018-06-21 17:14:34,917 analyze 153 =======================================================================
+ERROR 2018-06-21 17:14:34,923 analyze 154 
+
+ERROR 2018-06-21 17:14:34,923 analyze 155 Main : Exception occured for 8454e24cb6a249c9b2b622549c6ffe43.apk
+Traceback (most recent call last):
+  File "main_LargeVM.py", line 135, in analyze
+    d = dvm.DalvikVMFormat (a.get_dex())
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 7299, in __init__
+    self._load(buff)
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 7310, in _load
+    self.map_list = MapList( self.CM, self.__header.map_off, self )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 7192, in __init__
+    mi = MapItem( buff, self.CM )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 6692, in __init__
+    self.next(buff, cm)
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 6728, in next
+    self.item = ClassHDefItem( self.size, buff, cm )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 3475, in __init__
+    class_def = ClassDefItem( buff, cm )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 3215, in __init__
+    self.class_idx = unpack("=I", buff.read(4))[0]
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecode.py", line 686, in read
+    buff = self.__buff[ self.__idx : self.__idx + size ]
+KeyboardInterrupt
+ERROR 2018-06-22 12:19:16,544 analyze 152 
+
+ERROR 2018-06-22 12:19:16,546 analyze 153 =======================================================================
+ERROR 2018-06-22 12:19:16,546 analyze 154 
+
+ERROR 2018-06-22 12:19:16,546 analyze 155 Main : Exception occured for ff4b3730632944db9132678396ea2454.apk
+Traceback (most recent call last):
+  File "pipeline/python_static_analyzer/main_LargeVM.py", line 135, in analyze
+    d = dvm.DalvikVMFormat (a.get_dex())
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 7299, in __init__
+    self._load(buff)
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 7310, in _load
+    self.map_list = MapList( self.CM, self.__header.map_off, self )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 7205, in __init__
+    i.reload()
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 6816, in reload
+    self.item.reload()
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 3508, in reload
+    i.reload()
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 3240, in reload
+    self.class_data_item = self.__CM.get_class_data_item( self.class_data_off )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 6984, in get_class_data_item
+    if i.get_off() == off :
+KeyboardInterrupt
+ERROR 2018-06-22 12:28:44,595 analyze 152 
+
+ERROR 2018-06-22 12:28:44,595 analyze 153 =======================================================================
+ERROR 2018-06-22 12:28:44,596 analyze 154 
+
+ERROR 2018-06-22 12:28:44,597 analyze 152 
+
+ERROR 2018-06-22 12:28:44,597 analyze 153 =======================================================================
+ERROR 2018-06-22 12:28:44,597 analyze 154 
+
+ERROR 2018-06-22 12:28:44,596 analyze 155 Main : Exception occured for a48ade61ee2647e9a4889b979569dc66.apk
+Traceback (most recent call last):
+  File "pipeline/python_static_analyzer/main_LargeVM.py", line 135, in analyze
+    d = dvm.DalvikVMFormat (a.get_dex())
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 7299, in __init__
+    self._load(buff)
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 7310, in _load
+    self.map_list = MapList( self.CM, self.__header.map_off, self )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 7205, in __init__
+    i.reload()
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 6816, in reload
+    self.item.reload()
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 3508, in reload
+    i.reload()
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 3240, in reload
+    self.class_data_item = self.__CM.get_class_data_item( self.class_data_off )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 6984, in get_class_data_item
+    if i.get_off() == off :
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 3199, in get_off
+    return self.offset
+KeyboardInterrupt
+ERROR 2018-06-22 12:28:44,597 analyze 152 
+
+ERROR 2018-06-22 12:28:44,598 analyze 153 =======================================================================
+ERROR 2018-06-22 12:28:44,598 analyze 154 
+
+ERROR 2018-06-22 12:28:44,598 analyze 155 Main : Exception occured for a0b1c15922c04980b7772ed55b1835e6.apk
+Traceback (most recent call last):
+  File "pipeline/python_static_analyzer/main_LargeVM.py", line 144, in analyze
+    permission.StaticAnalyzer (filename, outfile_perm, packages, dbMgr, fileName, a, d, dx)
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/permission.py", line 89, in __init__
+    p = dx.get_permissions( manifestPermissions )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/analysis/analysis.py", line 2451, in get_permissions
+    permissions.update( self.get_tainted_packages().get_permissions( permissions_needed ) )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/analysis/analysis.py", line 1922, in get_permissions
+    if src_class_name in classes and m.get_name() not in classes :
+KeyboardInterrupt
+ERROR 2018-06-22 12:28:44,597 analyze 155 Main : Exception occured for fe8c9089f61b4375be446b3216046833.apk
+Traceback (most recent call last):
+  File "pipeline/python_static_analyzer/main_LargeVM.py", line 144, in analyze
+    permission.StaticAnalyzer (filename, outfile_perm, packages, dbMgr, fileName, a, d, dx)
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/permission.py", line 89, in __init__
+    p = dx.get_permissions( manifestPermissions )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/analysis/analysis.py", line 2451, in get_permissions
+    permissions.update( self.get_tainted_packages().get_permissions( permissions_needed ) )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/analysis/analysis.py", line 1922, in get_permissions
+    if src_class_name in classes and m.get_name() not in classes :
+KeyboardInterrupt
+ERROR 2018-06-22 12:43:25,972 analyze 152 
+
+ERROR 2018-06-22 12:43:25,972 analyze 153 =======================================================================
+ERROR 2018-06-22 12:43:25,972 analyze 154 
+
+ERROR 2018-06-22 12:43:25,973 analyze 155 Main : Exception occured for 56e7e9d6fab746f7b560f0247c9acff0.apk
+Traceback (most recent call last):
+  File "pipeline/python_static_analyzer/main_LargeVM.py", line 134, in analyze
+    a = apk.APK(filename, zipmodule=2)
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/apk.py", line 172, in __init__
+    fd = open(filename, "rb")
+IOError: [Errno 2] No such file or directory: '/home/abraham/playstore-scraper/apps/56e7e9d6fab746f7b560f0247c9acff0.apk'
+ERROR 2018-06-22 12:43:26,126 analyze 152 
+
+ERROR 2018-06-22 12:43:26,126 analyze 153 =======================================================================
+ERROR 2018-06-22 12:43:26,126 analyze 154 
+
+ERROR 2018-06-22 12:43:26,126 analyze 155 Main : Exception occured for 86963a19929f49a5a3722a4089281411.apk
+Traceback (most recent call last):
+  File "pipeline/python_static_analyzer/main_LargeVM.py", line 134, in analyze
+    a = apk.APK(filename, zipmodule=2)
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/apk.py", line 172, in __init__
+    fd = open(filename, "rb")
+IOError: [Errno 2] No such file or directory: '/home/abraham/playstore-scraper/apps/86963a19929f49a5a3722a4089281411.apk'
+ERROR 2018-06-22 12:43:27,467 analyze 152 
+
+ERROR 2018-06-22 12:43:27,467 analyze 153 =======================================================================
+ERROR 2018-06-22 12:43:27,467 analyze 154 
+
+ERROR 2018-06-22 12:43:27,467 analyze 155 Main : Exception occured for 9b624e24c55742fcbf1031665c986d56.apk
+Traceback (most recent call last):
+  File "pipeline/python_static_analyzer/main_LargeVM.py", line 134, in analyze
+    a = apk.APK(filename, zipmodule=2)
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/apk.py", line 172, in __init__
+    fd = open(filename, "rb")
+IOError: [Errno 2] No such file or directory: '/home/abraham/playstore-scraper/apps/9b624e24c55742fcbf1031665c986d56.apk'
+ERROR 2018-06-22 12:43:32,897 analyze 152 
+
+ERROR 2018-06-22 12:43:32,897 analyze 153 =======================================================================
+ERROR 2018-06-22 12:43:32,897 analyze 154 
+
+ERROR 2018-06-22 12:43:32,897 analyze 155 Main : Exception occured for 1aacc3866a094c118a9a77966b296e6a.apk
+Traceback (most recent call last):
+  File "pipeline/python_static_analyzer/main_LargeVM.py", line 134, in analyze
+    a = apk.APK(filename, zipmodule=2)
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/apk.py", line 172, in __init__
+    fd = open(filename, "rb")
+IOError: [Errno 2] No such file or directory: '/home/abraham/playstore-scraper/apps/1aacc3866a094c118a9a77966b296e6a.apk'
+ERROR 2018-06-22 12:45:17,298 analyze 152 
+
+ERROR 2018-06-22 12:45:17,298 analyze 153 =======================================================================
+ERROR 2018-06-22 12:45:17,298 analyze 154 
+
+ERROR 2018-06-22 12:45:17,299 analyze 155 Main : Exception occured for 145f7a9694e945b0a2b8b258e2307018.apk
+Traceback (most recent call last):
+  File "pipeline/python_static_analyzer/main_LargeVM.py", line 135, in analyze
+    d = dvm.DalvikVMFormat (a.get_dex())
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 7299, in __init__
+    self._load(buff)
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 7310, in _load
+    self.map_list = MapList( self.CM, self.__header.map_off, self )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 7205, in __init__
+    i.reload()
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 6816, in reload
+    self.item.reload()
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 3508, in reload
+    i.reload()
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 3240, in reload
+    self.class_data_item = self.__CM.get_class_data_item( self.class_data_off )
+  File "/home/abraham/playstore-scraper/pipeline/python_static_analyzer/androguard/core/bytecodes/dvm.py", line 6983, in get_class_data_item
+    for i in self.__manage_item[ "TYPE_CLASS_DATA_ITEM" ] :
+KeyboardInterrupt

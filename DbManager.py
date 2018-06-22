@@ -1,5 +1,5 @@
 from pymongo import MongoClient 
-from dbConfig import HOSTNAME, USERNAME, PASSWORD
+from dbConfig import HOST, PORT, APP_METADATA_DB, APP_ANALYSIS_DB
 
 class DBManagerClass:
     '''
@@ -7,10 +7,10 @@ class DBManagerClass:
     '''
     def __init__(self):
         # self.client = MongoClient(HOSTNAME, 27017)
-        self.client = MongoClient("localhost", 27017)
-        self.client["admin"].authenticate(USERNAME, PASSWORD)
-        self.staticAnalysisDB = self.client['staticAnalysis']
-        self.androidAppDB = self.client['androidApp']
+        self.client = MongoClient(HOST, PORT)
+        # self.client["admin"].authenticate(USERNAME, PASSWORD)
+        self.staticAnalysisDB = self.client[APP_ANALYSIS_DB]
+        self.androidAppDB = self.client[APP_METADATA_DB]
         
         #self.staticAnalysisDB = self.client['test']
     
