@@ -4,11 +4,10 @@ Created on Sep 9, 2012
 @author: psachdev
 '''
 #import manager
-import re
 import namespaceanalyzer
 import permission
 import SearchIntents
-#import DbManager
+import DbManager
 import logging
 import sys
 import datetime
@@ -43,7 +42,7 @@ def convert_to_dict(ordered_dict):
 def update_apk_entry((apkEntry, OUT)):
     fileName = apkEntry["packageName"]
     path = apkEntry["fileDir"]
-    filename = path + "/" + fileName
+    filename = path + '/' + fileName
     print filename
     try:
       a = apk.APK(filename, zipmodule=1)
@@ -136,18 +135,18 @@ def analyze((apkEntry, OUT)):
         d = dvm.DalvikVMFormat (a.get_dex())
         dx = uVMAnalysis (d)
         #remove old db entry in static analysis db
-        #dbMgr.deleteEntry(apkEntry['packageName'])
+        dbMgr.deleteEntry(apkEntry['packageName'])
     
-        packages = instance.execute (filename, outFileName, None, fileName, category, a, d, dx)
-        print(packages)
+        packages = instance.execute (filename, outFileName, dbMgr, fileName, category, a, d, dx)
+                
         outfile_perm = '/permissions.txt'
         outfile_perm = OUT + outfile_perm
-        permission.StaticAnalyzer (filename, outfile_perm, packages, None, fileName, a, d, dx)
+        permission.StaticAnalyzer (filename, outfile_perm, packages, dbMgr, fileName, a, d, dx)
                 
         outfile_links = '/links.txt'
         outfile_links = OUT + outfile_links
-        SearchIntents.Intents(filename, outfile_links, packages, None, fileName, a, d, dx);
-        #dbMgr.androidAppDB.apkInfo.update({'packageName':apkEntry['packageName']}, {'$set': {'isApkUpdated': False}})
+        SearchIntents.Intents(filename, outfile_links, packages, dbMgr, fileName, a, d, dx);
+        dbMgr.androidAppDB.apkInfo.update({'packageName':apkEntry['packageName']}, {'$set': {'isApkUpdated': False}})
         return apkEntry['packageName']
     except:
         logger.error("\n")
@@ -170,14 +169,14 @@ if __name__ == '__main__':
     if len(sys.argv) > 2:
         apkListFile = sys.argv[2] 
         isParallel = True
-    print isParallel
+    print apkListFile
           
     #in case the crawler breaks, append to the list.
     analyzedApkFile = open(OUT + '/' + 'filelist.txt', 'a+')
     '''
     Database Handle used to insert fields
     '''
-    # dbMgr = DbManager.DBManagerClass()
+    dbMgr = DbManager.DBManagerClass()
     
     '''
     Example of how the various entrie are made into the database
@@ -199,8 +198,8 @@ if __name__ == '__main__':
             pair = line.rstrip('\n').split(' ')
             apkList.append({'packageName': pair[0], "fileDir": pair[1].replace("/home/lsuper/apk_data", "/home/ubuntu")}) 
         apkList_f.close()
-    # else:
-    #     apkList = list(dbMgr.androidAppDB.apkInfo.find({'isApkUpdated':True},{"fileDir":1, 'packageName':1}))
+    else:
+        apkList = list(dbMgr.androidAppDB.apkInfo.find({'isApkUpdated':True},{"fileDir":1, 'packageName':1}))
     apkList = [(entry, OUT) for entry in apkList]
 
     print apkList
