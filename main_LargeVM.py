@@ -13,10 +13,12 @@ import sys
 import datetime
 import xmltodict
 import collections
+import __builtin__
 
 from androguard.core.bytecodes import apk
 from androguard.core.bytecodes import dvm
 from androguard.core.analysis.analysis import *
+from app_downloader.downloader import Downloader
 
 from multiprocessing import Pool, get_logger
 import pprint
@@ -39,6 +41,28 @@ def convert_to_dict(ordered_dict):
     return ordered_dict
 
 
+def docToDict(doc):
+    # built in types not to recurse for
+    builtinTypes= set([t for t in __builtin__.__dict__.itervalues() if isinstance(t, type)])
+    # protobuf types to loop through instead of recursing for
+    protoListTypes = set([
+        "<type 'google.protobuf.pyext._message.RepeatedCompositeContainer'>",
+        "<type 'google.protobuf.pyext._message.RepeatedScalarContainer'>"
+    ])
+
+    docDict = {}
+    for field in list(doc.DESCRIPTOR.fields):
+        value = getattr(doc, field.name)
+        if type(value) in builtinTypes:
+            docDict[field.name] = value
+        elif str(type(value)) in protoListTypes:
+            docDict[field.name] = [v if type(v) in builtinTypes else docToDict(v) for v in value]
+        else:
+            docDict[field.name] = docToDict(value)
+    
+    return docDict
+
+
 def update_apk_entry((apkEntry, OUT)):
     fileName = apkEntry["packageName"]
     path = apkEntry["fileDir"]
@@ -51,7 +75,8 @@ def update_apk_entry((apkEntry, OUT)):
 
     vc = a.get_androidversion_name()
     packageName = a.get_package()
-    # TODO: define docDict here using playstore-scraper get_doc_apk_details
+    doc = downloader.get_doc_apk_details([packageName])[0].docV2
+    docDict = docToDict(doc)
     isApkUpdated = False
     preDetailsEntry = dbMgr.androidAppDB.apkDetails.find_one(
         {"details.appDetails.packageName":packageName},
@@ -71,10 +96,9 @@ def update_apk_entry((apkEntry, OUT)):
     else:
         isApkUpdated = False
 
-    pp.pprint(docDict)
     infoDict = docDict["details"]["appDetails"]
 
-    #isFree = not doc.offer[0]
+    isFree = not doc.offer[0]
     isCurrentVersionDownloaded = False
     isSizeExceed = False
 
@@ -94,7 +118,7 @@ def update_apk_entry((apkEntry, OUT)):
     if (preInfoEntry != infoDict or 
             (preIsCurrentVersionDownloaded == False and 
              isCurrentVersionDownloaded == True)):
-        #infoDict["isFree"] = isFree
+        infoDict["isFree"] = isFree
         infoDict["isDownloaded"] = preIsDownloaded or isCurrentVersionDownloaded
         infoDict["isCurrentVersionDownloaded"] = isCurrentVersionDownloaded
         if preFileDir == "" and isCurrentVersionDownloaded:
@@ -109,9 +133,7 @@ def update_apk_entry((apkEntry, OUT)):
         if isSizeExceed != None:
             infoDict["isSizeExceed"] = isSizeExceed
         infoDict["updatedTimestamp"] = datetime.datetime.utcnow()
-        db.apkInfo.update({"packageName": packageName}, infoDict, upsert=True)
-
-    return ret
+        dbMgr.androidAppDB.apkInfo.update({"packageName": packageName}, infoDict, upsert=True)
 
 
 def analyze((apkEntry, OUT)):
@@ -169,7 +191,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 2:
         apkListFile = sys.argv[2] 
         isParallel = True
-    print apkListFile
+    # print apkListFile
           
     #in case the crawler breaks, append to the list.
     analyzedApkFile = open(OUT + '/' + 'filelist.txt', 'a+')
@@ -190,6 +212,8 @@ if __name__ == '__main__':
     logFileHandler.setLevel(logging.DEBUG)
     logFileHandler.setFormatter(logFormat)
     logger.addHandler(logFileHandler)
+
+    downloader = Downloader(use_database=False)
     
     apkList = []
     if isParallel:
