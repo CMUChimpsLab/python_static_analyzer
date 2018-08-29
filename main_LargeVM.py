@@ -63,7 +63,7 @@ def analyze((apkEntry, OUT)):
         return ""
 
 if __name__ == '__main__':
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 2:
       print "Usage: python main_LargeVM.py log_file_dir apk_list_file"
       sys.exit(1)
 
