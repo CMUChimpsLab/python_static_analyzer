@@ -7,7 +7,6 @@ class DBManagerClass:
     '''
     def __init__(self):
         self.client = MongoClient(HOSTNAME, 27017)
-        #self.client = MongoClient("localhost", 27017)
         self.client["admin"].authenticate(USERNAME, PASSWORD)
         self.staticAnalysisDB = self.client['staticAnalysis']
         self.androidAppDB = self.client['androidApp']
