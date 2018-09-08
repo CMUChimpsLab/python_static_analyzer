@@ -23,10 +23,12 @@ def handler (signum, sigframe):
 
 def analyze((apkEntry, OUT)):
     try:
+        dbMgr = DbManager.DBManagerClass()
         OUT = OUT + '/'
-        fileName = apkEntry['packageName'] + '.apk'
+        fileName = apkEntry['packageName']
         path = apkEntry['fileDir']
         print "FileName Analyzed :"  + fileName
+        logger.info("adfasdf")
         tokens = namespaceanalyzer.NameSpaceMgr.GetTokensStatic (path, '/')
         category =  tokens [len (tokens) - 1]
         #print category
@@ -34,7 +36,7 @@ def analyze((apkEntry, OUT)):
         outFileName = '/package.txt'
         outFileName = OUT + outFileName
         instance = namespaceanalyzer.NameSpaceMgr()
-    
+
         try:
           a = apk.APK(filename, zipmodule=1)
         except:
@@ -43,17 +45,18 @@ def analyze((apkEntry, OUT)):
         dx = uVMAnalysis (d)
         #remove old db entry in static analysis db
         dbMgr.deleteEntry(apkEntry['packageName'])
-    
+
         packages = instance.execute (filename, outFileName, dbMgr, fileName, category, a, d, dx)
-                
+
         outfile_perm = '/permissions.txt'
         outfile_perm = OUT + outfile_perm
         permission.StaticAnalyzer (filename, outfile_perm, packages, dbMgr, fileName, a, d, dx)
-                
+
         outfile_links = '/links.txt'
         outfile_links = OUT + outfile_links
         SearchIntents.Intents(filename, outfile_links, packages, dbMgr, fileName, a, d, dx);
         dbMgr.androidAppDB.apkInfo.update({'packageName':apkEntry['packageName']}, {'$set': {'isApkUpdated': False}})
+        print "done"
         return apkEntry['packageName']
     except:
         logger.error("\n")
@@ -63,25 +66,16 @@ def analyze((apkEntry, OUT)):
         return ""
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
       print "Usage: python main_LargeVM.py log_file_dir apk_list_file"
       sys.exit(1)
 
     OUT = sys.argv[1]
-    isParallel = False
-    #for parallel running on multiple instances
-    apkListFile = None
-    if len(sys.argv) > 2:
-      apkListFile = sys.argv[2] 
-      isParallel = True
-          
+    apkListFile = sys.argv[2]
+
     #in case the crawler breaks, append to the list.
     analyzedApkFile = open(OUT + '/' + 'filelist.txt', 'a+')
-    '''
-    Database Handle used to insert fields
-    '''
-    dbMgr = DbManager.DBManagerClass()
-    
+
     '''
     Example of how the various entrie are made into the database
     dbMgr.insert3rdPartyPackageInfo("testpackage", "testfilename", "testexternalpackage")
@@ -94,22 +88,20 @@ if __name__ == '__main__':
     logFileHandler.setLevel(logging.DEBUG)
     logFileHandler.setFormatter(logFormat)
     logger.addHandler(logFileHandler)
-    
+
     apkList = []
-    if isParallel:
-        apkList_f = open(apkListFile)
-        for line in apkList_f:
-            pair = line.rstrip('\n').split(' ')
-            apkList.append({'packageName': pair[0], "fileDir": pair[1].replace("/home/lsuper/apk_data", "/home/ubuntu")}) 
-        apkList_f.close()
-    else:
-        apkList = list(dbMgr.androidAppDB.apkInfo.find({'isApkUpdated':True},{"fileDir":1, 'packageName':1}))
+    apkList_f = open(apkListFile)
+    for line in apkList_f:
+        pair = line.rstrip('\n').split(' ')
+        print line
+        apkList.append({'packageName': pair[0], "fileDir": pair[1]})
+    apkList_f.close()
+
     apkList = [(entry, OUT) for entry in apkList]
-    #apkList = [({'packageName': line.rstrip('\n').replace(".apk",''), 'fileDir': '../downloads/'}, OUT) for line in open("apkList").readlines()]
     numberOfProcess = 4
     pool = Pool(numberOfProcess)
     for packageName in pool.imap(analyze, apkList):
         if packageName != "":
             analyzedApkFile.write(packageName + '\n')
             analyzedApkFile.flush()
-    
+
