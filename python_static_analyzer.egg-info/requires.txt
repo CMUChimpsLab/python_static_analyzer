@@ -1,4 +1,0 @@
-mysqlclient
-numpy
-pandas
-pymongo
